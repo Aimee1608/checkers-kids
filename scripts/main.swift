@@ -8,9 +8,9 @@ func assertTrue(_ cond: Bool, _ msg: String) {
     print("✅ \(msg)")
 }
 
-// 1. 棋盘几何
+// 1. 棋盘几何:完整六角星应该正好 121 格,6 个尖角旋转生成后互不重叠、也不跟六边形本体重叠。
 let board0 = Board()
-assertTrue(board0.cells.count == 81, "棋盘一共 81 格")
+assertTrue(board0.cells.count == 121, "棋盘一共 121 格(六边形61 + 6个尖角×10)")
 assertTrue(board0.pieces(of: .top).count == 10, "top 起始 10 个子")
 assertTrue(board0.pieces(of: .bottom).count == 10, "bottom 起始 10 个子")
 

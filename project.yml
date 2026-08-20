@@ -21,3 +21,23 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: "NO"
+  CheckersKidsUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_VERSION: "5.0"
+    dependencies:
+      - target: CheckersKids
+schemes:
+  CheckersKids:
+    build:
+      targets:
+        CheckersKids: all
+        CheckersKidsUITests: [test]
+    test:
+      targets:
+        - CheckersKidsUITests

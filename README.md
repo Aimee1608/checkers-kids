@@ -17,9 +17,10 @@ open CheckersKids.xcodeproj
 
 ## 当前范围
 
-- 棋盘:中间六边形 + 南北两个尖角(81 格),对应经典"南北对战"玩法。完整六角星(另外 4 个角)还没做——那部分几何推导复杂,想等能实时跑模拟器核对效果时再加,架构上（`Board`/`BoardLayout`）已经是按"合法格子集合"设计的，扩展不用重写引擎。
+- 棋盘:完整六角星(121 格)。中间六边形本体不变,另外 5 个尖角(含南)由北尖角的相对坐标绕棋盘中心旋转 60°×k 得到,k=3 精确落回南尖角,靠这个自洽性验证过旋转公式没手推错。南北对战只用南北两个尖角起子,其余四角是空的装饰区。
+- 空格子颜色对比度偏低(深绿背景 + 半透明黑洞),侧边尖角的格子在小尺寸截图里肉眼不好分辨,数据/坐标是对的(有 UI 测试验证),纯视觉待打磨。
 - AI:minimax + alpha-beta,按"棋子到目标区的行进度"打分,分简单/中等/困难三档(对应搜索深度 1/2/3)。
-- 玩家执下方(橙色)先手,电脑执上方(绿色)。
+- 玩家执下方(橙色)先手,电脑执上方(绿色)。棋盘宽度随屏幕自适应,适配 iPad。
 
 ## 目录结构
 
@@ -31,6 +32,15 @@ Sources/
   Views/       SwiftUI 界面
 scripts/
   main.swift   核心规则冒烟测试(棋盘几何/连跳/AI自对弈),不依赖 Xcode 工程
+UITests/
+  GameFlowUITests.swift   XCUITest:六角星格子数/坐标断言、点击落子+AI应手全链路
+```
+
+## 跑 UI 测试
+
+```bash
+xcodebuild -project CheckersKids.xcodeproj -scheme CheckersKids \
+  -destination "platform=iOS Simulator,name=iPhone 15" test
 ```
 
 ## 跑冒烟测试
