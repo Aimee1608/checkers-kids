@@ -29,4 +29,19 @@ Sources/
   Models/      棋盘几何、走子规则、对局状态
   AI/          minimax AI
   Views/       SwiftUI 界面
+scripts/
+  main.swift   核心规则冒烟测试(棋盘几何/连跳/AI自对弈),不依赖 Xcode 工程
 ```
+
+## 跑冒烟测试
+
+不用开 Xcode,直接编译核心逻辑跑一遍:
+
+```bash
+swiftc Sources/Models/Hex.swift Sources/Models/Board.swift Sources/Models/Move.swift \
+  Sources/AI/CheckersAI.swift scripts/main.swift -o /tmp/checkerskids_smoketest
+/tmp/checkerskids_smoketest
+```
+
+(多文件传给 `swift` 解释器直接跑在这个工具链上有 bug,顶层代码所在文件必须叫
+`main.swift` 并用 `swiftc` 编译成可执行文件再跑,别用 `swift a.swift b.swift` 这种写法。)
