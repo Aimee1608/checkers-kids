@@ -82,30 +82,40 @@ enum BoardLayout {
     }
 }
 
+/// 棋子带稳定 id(仅在开局分配一次,之后只搬家不重建),
+/// 好让 UI 用 matchedGeometryEffect 认出"这是同一颗子在动",而不是瞬移。
+struct Piece: Hashable {
+    let id: Int
+    let team: Team
+}
+
 struct Board {
     let cells: Set<Hex>
-    private(set) var pieces: [Hex: Team]
+    private(set) var pieces: [Hex: Piece]
 
     init() {
         cells = BoardLayout.allCells()
-        pieces = [:]
+        var pieces: [Hex: Piece] = [:]
+        var nextId = 0
         for team in [Team.top, .bottom] {
             for hex in BoardLayout.startCells(for: team) {
-                pieces[hex] = team
+                pieces[hex] = Piece(id: nextId, team: team)
+                nextId += 1
             }
         }
+        self.pieces = pieces
     }
 
-    func piece(at hex: Hex) -> Team? { pieces[hex] }
+    func piece(at hex: Hex) -> Piece? { pieces[hex] }
 
     func pieces(of team: Team) -> [Hex] {
-        pieces.compactMap { $0.value == team ? $0.key : nil }
+        pieces.compactMap { $0.value.team == team ? $0.key : nil }
     }
 
     mutating func apply(_ move: Move) {
-        guard let team = pieces[move.from] else { return }
+        guard let piece = pieces[move.from] else { return }
         pieces[move.from] = nil
-        pieces[move.to] = team
+        pieces[move.to] = piece
     }
 
     func applying(_ move: Move) -> Board {
@@ -116,6 +126,6 @@ struct Board {
 
     func isWon(by team: Team) -> Bool {
         let goal = BoardLayout.goalCells(for: team)
-        return goal.allSatisfy { pieces[$0] == team }
+        return goal.allSatisfy { pieces[$0]?.team == team }
     }
 }

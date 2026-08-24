@@ -27,10 +27,19 @@ struct BoardView: View {
                 .frame(width: width, height: height)
                 .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
 
+            // 格子层:固定位置,负责点击和空格/落点提示,不随棋子移动。
             ForEach(sortedCells, id: \.self) { hex in
                 let p = point(for: hex, spacing: spacing)
-                pegView(for: hex, pegSize: pegSize, spacing: spacing)
+                cellButton(for: hex, pegSize: pegSize)
                     .position(x: p.x - b.minX + pegSize, y: p.y - b.minY + pegSize)
+            }
+
+            // 棋子层:按 piece.id 单独 track,棋子移动时坐标平滑过渡,不是瞬移。
+            ForEach(Array(engine.board.pieces), id: \.value.id) { hex, piece in
+                let p = point(for: hex, spacing: spacing)
+                pieceView(for: piece, pegSize: pegSize, isSelected: engine.selectedPiece == hex)
+                    .position(x: p.x - b.minX + pegSize, y: p.y - b.minY + pegSize)
+                    .allowsHitTesting(false)
             }
         }
         .frame(width: width, height: height)
@@ -69,16 +78,14 @@ struct BoardView: View {
     }
 
     @ViewBuilder
-    private func pegView(for hex: Hex, pegSize: CGFloat, spacing: CGFloat) -> some View {
-        let team = engine.board.piece(at: hex)
-        let isSelected = engine.selectedPiece == hex
+    private func cellButton(for hex: Hex, pegSize: CGFloat) -> some View {
         let isDestination = engine.legalDestinations.contains(hex)
+        let hasPiece = engine.board.piece(at: hex) != nil
 
         Button {
             engine.select(hex)
         } label: {
             ZStack {
-                // Cell hole
                 Circle()
                     .fill(Color.black.opacity(0.3))
                     .frame(width: pegSize * 0.65, height: pegSize * 0.65)
@@ -87,9 +94,7 @@ struct BoardView: View {
                             .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
 
-                if let team {
-                    pieceView(for: team, pegSize: pegSize, isSelected: isSelected)
-                } else if isDestination {
+                if !hasPiece && isDestination {
                     Circle()
                         .fill(Color.yellow.opacity(0.7))
                         .frame(width: pegSize * 0.35, height: pegSize * 0.35)
@@ -97,15 +102,16 @@ struct BoardView: View {
                 }
             }
             .frame(width: pegSize, height: pegSize)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(engine.currentTurn != engine.humanTeam || engine.winner != nil)
+        .disabled(!engine.isInteractive)
         .accessibilityIdentifier("peg_\(hex.col)_\(hex.row)")
     }
 
     @ViewBuilder
-    private func pieceView(for team: Team, pegSize: CGFloat, isSelected: Bool) -> some View {
-        let colors = team == .top
+    private func pieceView(for piece: Piece, pegSize: CGFloat, isSelected: Bool) -> some View {
+        let colors = piece.team == .top
             ? [Color(red: 0.2, green: 0.78, blue: 0.32), Color(red: 0.08, green: 0.5, blue: 0.18)]
             : [Color(red: 1.0, green: 0.62, blue: 0.1), Color(red: 0.88, green: 0.38, blue: 0.0)]
 
@@ -139,5 +145,6 @@ struct BoardView: View {
                     .shadow(color: .yellow.opacity(0.7), radius: 5)
             }
         }
+        .frame(width: pegSize, height: pegSize)
     }
 }

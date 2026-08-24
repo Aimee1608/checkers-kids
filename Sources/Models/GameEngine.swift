@@ -1,5 +1,11 @@
 import Foundation
 import Combine
+import SwiftUI
+
+enum GameMode {
+    case vsAI
+    case local // 双人本地对战(面对面传着玩),两边都是人手动点
+}
 
 @MainActor
 final class GameEngine: ObservableObject {
@@ -8,13 +14,24 @@ final class GameEngine: ObservableObject {
     @Published private(set) var winner: Team?
     @Published var selectedPiece: Hex?
     @Published private(set) var legalDestinations: [Hex] = []
+    @Published private(set) var isAnimating = false
 
+    let mode: GameMode
     let humanTeam: Team = .bottom
     let aiTeam: Team = .top
     @Published var aiDifficulty: AIDifficulty = .medium
 
+    init(mode: GameMode) {
+        self.mode = mode
+    }
+
+    var isInteractive: Bool {
+        guard winner == nil, !isAnimating else { return false }
+        return mode == .local || currentTurn == humanTeam
+    }
+
     func select(_ hex: Hex) {
-        guard winner == nil, currentTurn == humanTeam else { return }
+        guard isInteractive else { return }
 
         if let selected = selectedPiece, legalDestinations.contains(hex) {
             let moves = MoveGenerator.availableMoves(for: selected, on: board)
@@ -24,7 +41,7 @@ final class GameEngine: ObservableObject {
             return
         }
 
-        guard board.piece(at: hex) == humanTeam else {
+        guard board.piece(at: hex)?.team == currentTurn else {
             selectedPiece = nil
             legalDestinations = []
             return
@@ -34,17 +51,41 @@ final class GameEngine: ObservableObject {
     }
 
     func perform(_ move: Move) {
-        board.apply(move)
         selectedPiece = nil
         legalDestinations = []
+        animateAlongPath(move) { [weak self] in
+            guard let self else { return }
+            if self.board.isWon(by: self.currentTurn) {
+                self.winner = self.currentTurn
+                return
+            }
+            self.currentTurn = self.currentTurn.opponent
+            if self.mode == .vsAI && self.currentTurn == self.aiTeam {
+                self.requestAIMove()
+            }
+        }
+    }
 
-        if board.isWon(by: currentTurn) {
-            winner = currentTurn
+    /// 按 move.path 逐格动画,连跳时一跳一跳地走给小朋友看清楚,不是瞬移到终点。
+    private func animateAlongPath(_ move: Move, completion: @escaping () -> Void) {
+        guard move.path.count > 2 else {
+            withAnimation(.easeInOut(duration: 0.3)) { board.apply(move) }
+            completion()
             return
         }
-        currentTurn = currentTurn.opponent
-        if currentTurn == aiTeam {
-            requestAIMove()
+        isAnimating = true
+        Task {
+            for i in 1..<move.path.count {
+                let step = Move(from: move.path[i - 1], to: move.path[i], path: [], isJump: move.isJump)
+                await MainActor.run {
+                    withAnimation(.easeInOut(duration: 0.22)) { self.board.apply(step) }
+                }
+                try? await Task.sleep(nanoseconds: 260_000_000)
+            }
+            await MainActor.run {
+                self.isAnimating = false
+                completion()
+            }
         }
     }
 
@@ -53,6 +94,8 @@ final class GameEngine: ObservableObject {
         let team = aiTeam
         let difficulty = aiDifficulty
         Task {
+            // 先"想"一下,别一变成电脑回合就秒下,小朋友根本反应不过来。
+            try? await Task.sleep(nanoseconds: 500_000_000)
             let move = await CheckersAI.bestMove(for: team, on: snapshot, difficulty: difficulty)
             await MainActor.run {
                 guard let move, self.currentTurn == team, self.winner == nil else { return }
@@ -67,5 +110,6 @@ final class GameEngine: ObservableObject {
         winner = nil
         selectedPiece = nil
         legalDestinations = []
+        isAnimating = false
     }
 }

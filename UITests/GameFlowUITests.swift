@@ -1,11 +1,19 @@
 import XCTest
 
 final class GameFlowUITests: XCTestCase {
+    private func launchIntoGame(mode identifier: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launch()
+        let modeButton = app.buttons[identifier]
+        XCTAssertTrue(modeButton.waitForExistence(timeout: 5), "首页应该有 \(identifier) 这个模式按钮")
+        modeButton.tap()
+        return app
+    }
+
     /// 六角星应该有 121 个格子按钮,side 三角上的远端格子(比如 col12,row4)必须存在;
     /// 只是六边形+南北角的旧版是 81 格,没有这颗子。
     func testFullHexagramCellsExist() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = launchIntoGame(mode: "mode_vsAI")
 
         let allPegs = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'peg_'"))
         XCTAssertEqual(allPegs.count, 121, "棋盘应该是完整六角星 121 格")
@@ -20,8 +28,7 @@ final class GameFlowUITests: XCTestCase {
     }
 
     func testTapMoveTriggersAIResponse() throws {
-        let app = XCUIApplication()
-        app.launch()
+        let app = launchIntoGame(mode: "mode_vsAI")
 
         let piece = app.buttons["peg_1_13"]
         XCTAssertTrue(piece.waitForExistence(timeout: 5), "初始棋盘里应该能找到 (1,13) 这颗子")
@@ -40,5 +47,25 @@ final class GameFlowUITests: XCTestCase {
         attachment.name = "after-ai-move"
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    /// 双人本地模式下,电脑不该自动应手——bottom 走完还是轮到 top(绿方),
+    /// 不会像 vsAI 模式那样自动跳到"电脑思考中"。
+    func testLocalModeBothSidesAreHumanControlled() throws {
+        let app = launchIntoGame(mode: "mode_local")
+
+        let piece = app.buttons["peg_1_13"]
+        XCTAssertTrue(piece.waitForExistence(timeout: 5))
+        piece.tap()
+        let destination = app.buttons["peg_0_12"]
+        XCTAssertTrue(destination.waitForExistence(timeout: 5))
+        destination.tap()
+
+        let greenTurnLabel = app.staticTexts["轮到绿方"]
+        XCTAssertTrue(greenTurnLabel.waitForExistence(timeout: 3), "本地对战下 bottom 走完该轮到绿方等人点,不是电脑自动接手")
+
+        // 绿方(top)的子也应该能点得动,不是被 disabled。
+        let greenPiece = app.buttons["peg_-1_3"]
+        XCTAssertTrue(greenPiece.isEnabled, "本地对战下双方棋子都该是人可以点的")
     }
 }
