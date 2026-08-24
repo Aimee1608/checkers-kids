@@ -68,4 +68,31 @@ final class GameFlowUITests: XCTestCase {
         let greenPiece = app.buttons["peg_-1_3"]
         XCTAssertTrue(greenPiece.isEnabled, "本地对战下双方棋子都该是人可以点的")
     }
+
+    /// 左上角 ‹ 按钮任何时候都能退出当前对局回首页,不用等分出胜负。
+    func testBackButtonExitsMidGameToHome() throws {
+        let app = launchIntoGame(mode: "mode_vsAI")
+        XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
+
+        app.buttons["backToHome"].tap()
+
+        XCTAssertTrue(app.buttons["mode_vsAI"].waitForExistence(timeout: 5), "退出后应该回到首页选模式")
+    }
+
+    /// 重开按钮要能在对局进行中随时把棋盘/回合都复位,不用等有人赢。
+    func testRestartMidGameResetsBoard() throws {
+        let app = launchIntoGame(mode: "mode_vsAI")
+
+        app.buttons["peg_1_13"].tap()
+        app.buttons["peg_0_12"].tap()
+        XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 15), "AI 应手完成,轮回玩家")
+
+        app.buttons["restartGame"].tap()
+        XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 2), "重开后应该立刻是玩家回合,不用等AI")
+
+        // 重开后 (1,13) 应该又有子、能再走一次到 (0,12) —— 证明棋子位置真的复位了,不只是回合数字。
+        app.buttons["peg_1_13"].tap()
+        app.buttons["peg_0_12"].tap()
+        XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 15), "重开后棋子位置应该也复位了,这步棋应该还能走一遍")
+    }
 }

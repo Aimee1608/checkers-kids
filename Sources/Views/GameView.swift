@@ -59,7 +59,16 @@ struct GameView: View {
                         .padding(8)
                 }
                 .accessibilityIdentifier("backToHome")
+
                 Spacer()
+
+                Button { engine.reset() } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .padding(8)
+                }
+                .accessibilityIdentifier("restartGame")
             }
             .padding(.horizontal, 16)
 

@@ -21,6 +21,9 @@ final class GameEngine: ObservableObject {
     let aiTeam: Team = .top
     @Published var aiDifficulty: AIDifficulty = .medium
 
+    /// 中途 reset() 会让正在跑的 AI 思考/连跳动画作废,靠这个代数号识别"这次异步任务是不是已经过期了"。
+    private var generation = 0
+
     init(mode: GameMode) {
         self.mode = mode
     }
@@ -68,6 +71,7 @@ final class GameEngine: ObservableObject {
 
     /// 按 move.path 逐格动画,连跳时一跳一跳地走给小朋友看清楚,不是瞬移到终点。
     private func animateAlongPath(_ move: Move, completion: @escaping () -> Void) {
+        let myGeneration = generation
         guard move.path.count > 2 else {
             withAnimation(.easeInOut(duration: 0.3)) { board.apply(move) }
             completion()
@@ -78,11 +82,13 @@ final class GameEngine: ObservableObject {
             for i in 1..<move.path.count {
                 let step = Move(from: move.path[i - 1], to: move.path[i], path: [], isJump: move.isJump)
                 await MainActor.run {
+                    guard self.generation == myGeneration else { return }
                     withAnimation(.easeInOut(duration: 0.22)) { self.board.apply(step) }
                 }
                 try? await Task.sleep(nanoseconds: 260_000_000)
             }
             await MainActor.run {
+                guard self.generation == myGeneration else { return }
                 self.isAnimating = false
                 completion()
             }
@@ -93,18 +99,22 @@ final class GameEngine: ObservableObject {
         let snapshot = board
         let team = aiTeam
         let difficulty = aiDifficulty
+        let myGeneration = generation
         Task {
             // 先"想"一下,别一变成电脑回合就秒下,小朋友根本反应不过来。
             try? await Task.sleep(nanoseconds: 500_000_000)
             let move = await CheckersAI.bestMove(for: team, on: snapshot, difficulty: difficulty)
             await MainActor.run {
-                guard let move, self.currentTurn == team, self.winner == nil else { return }
+                guard self.generation == myGeneration,
+                      let move, self.currentTurn == team, self.winner == nil else { return }
                 self.perform(move)
             }
         }
     }
 
+    /// 中途想重开这一局,或者赢了之后再来一局,都走这个。
     func reset() {
+        generation += 1
         board = Board()
         currentTurn = .bottom
         winner = nil
