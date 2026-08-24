@@ -69,18 +69,30 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(greenPiece.isEnabled, "本地对战下双方棋子都该是人可以点的")
     }
 
-    /// 左上角 ‹ 按钮任何时候都能退出当前对局回首页,不用等分出胜负。
-    func testBackButtonExitsMidGameToHome() throws {
+    /// 左上角退出按钮要弹二次确认,点气泡外面取消不该真退出;点"退出"才回首页。
+    /// (这个 iOS 版本上 confirmationDialog 从小图标按钮弹出时,渲染成贴着按钮的
+    /// 气泡样式,只显示破坏性操作那个按钮,"取消"没有单独的文字按钮——靠点气泡
+    /// 外面dismiss,这是系统这一版的展示行为,不是产品缺了取消入口。)
+    func testBackButtonAsksConfirmationBeforeExiting() throws {
         let app = launchIntoGame(mode: "mode_vsAI")
         XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
 
         app.buttons["backToHome"].tap()
+        XCTAssertTrue(app.staticTexts["退出这一局?"].waitForExistence(timeout: 3), "退出前应该有确认弹窗")
 
-        XCTAssertTrue(app.buttons["mode_vsAI"].waitForExistence(timeout: 5), "退出后应该回到首页选模式")
+        // 点气泡外面 = 取消,不该真的退出。
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)).tap()
+        XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 3), "点气泡外面取消不该真的退出,棋盘应该还在")
+
+        app.buttons["backToHome"].tap()
+        let confirmExit = app.buttons["退出"]
+        XCTAssertTrue(confirmExit.waitForExistence(timeout: 3))
+        confirmExit.tap()
+        XCTAssertTrue(app.buttons["mode_vsAI"].waitForExistence(timeout: 5), "确认退出后应该回到首页选模式")
     }
 
-    /// 重开按钮要能在对局进行中随时把棋盘/回合都复位,不用等有人赢。
-    func testRestartMidGameResetsBoard() throws {
+    /// 重开按钮同样要二次确认;确认后棋盘/回合才真的复位。
+    func testRestartAsksConfirmationThenResetsBoard() throws {
         let app = launchIntoGame(mode: "mode_vsAI")
 
         app.buttons["peg_1_13"].tap()
@@ -88,6 +100,10 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 15), "AI 应手完成,轮回玩家")
 
         app.buttons["restartGame"].tap()
+        let confirmRestart = app.buttons["重新开始"]
+        XCTAssertTrue(confirmRestart.waitForExistence(timeout: 3), "重开前应该有确认弹窗")
+        confirmRestart.tap()
+
         XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 2), "重开后应该立刻是玩家回合,不用等AI")
 
         // 重开后 (1,13) 应该又有子、能再走一次到 (0,12) —— 证明棋子位置真的复位了,不只是回合数字。

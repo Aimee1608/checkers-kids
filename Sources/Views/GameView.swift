@@ -3,6 +3,8 @@ import SwiftUI
 struct GameView: View {
     @StateObject private var engine: GameEngine
     let onExit: () -> Void
+    @State private var showExitConfirm = false
+    @State private var showRestartConfirm = false
 
     init(mode: GameMode, onExit: @escaping () -> Void) {
         _engine = StateObject(wrappedValue: GameEngine(mode: mode))
@@ -45,30 +47,46 @@ struct GameView: View {
         .overlay {
             if let winner = engine.winner {
                 winnerBanner(winner)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
             }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.75), value: engine.winner)
     }
 
     private var header: some View {
         VStack(spacing: 4) {
             HStack {
-                Button(action: onExit) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 18, weight: .semibold))
+                Button { showExitConfirm = true } label: {
+                    // 用 xmark 不用 chevron.left:后者会被系统自动打上语义化的
+                    // "Back" 无障碍标签,触发系统返回手势的特殊处理,把弹窗顶掉。
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.7))
-                        .padding(8)
+                        .frame(width: 44, height: 44) // Apple HIG 建议的最小可点区域
                 }
+                .buttonStyle(PressableButtonStyle())
                 .accessibilityIdentifier("backToHome")
+                .confirmationDialog("退出这一局?", isPresented: $showExitConfirm, titleVisibility: .visible) {
+                    Button("退出", role: .destructive, action: onExit)
+                    Button("取消", role: .cancel) {}
+                } message: {
+                    Text("当前棋局不会保存")
+                }
 
                 Spacer()
 
-                Button { engine.reset() } label: {
+                Button { showRestartConfirm = true } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.7))
-                        .padding(8)
+                        .frame(width: 44, height: 44)
                 }
+                .buttonStyle(PressableButtonStyle())
                 .accessibilityIdentifier("restartGame")
+                .confirmationDialog("重新开始这一局?", isPresented: $showRestartConfirm, titleVisibility: .visible) {
+                    Button("重新开始", role: .destructive) { engine.reset() }
+                    Button("取消", role: .cancel) {}
+                }
             }
             .padding(.horizontal, 16)
 
@@ -106,7 +124,7 @@ struct GameView: View {
                                       : Color.white.opacity(0.1))
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
             }
         }
     }
@@ -141,7 +159,7 @@ struct GameView: View {
                                 .fill(Color.orange)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .padding(.horizontal, 40)
             }
             .padding(32)

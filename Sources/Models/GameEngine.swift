@@ -51,15 +51,20 @@ final class GameEngine: ObservableObject {
         }
         selectedPiece = hex
         legalDestinations = MoveGenerator.availableMoves(for: hex, on: board).map(\.to)
+        Haptics.select()
     }
 
     func perform(_ move: Move) {
         selectedPiece = nil
         legalDestinations = []
+        Haptics.move()
         animateAlongPath(move) { [weak self] in
             guard let self else { return }
             if self.board.isWon(by: self.currentTurn) {
-                self.winner = self.currentTurn
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.7)) {
+                    self.winner = self.currentTurn
+                }
+                Haptics.win()
                 return
             }
             self.currentTurn = self.currentTurn.opponent
