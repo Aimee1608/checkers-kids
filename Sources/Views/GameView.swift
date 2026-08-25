@@ -2,12 +2,14 @@ import SwiftUI
 
 struct GameView: View {
     @StateObject private var engine: GameEngine
+    let skin: BoardSkin
     let onExit: () -> Void
     @State private var showExitConfirm = false
     @State private var showRestartConfirm = false
 
-    init(mode: GameMode, onExit: @escaping () -> Void) {
-        _engine = StateObject(wrappedValue: GameEngine(mode: mode))
+    init(mode: GameMode, aiDifficulty: AIDifficulty, skin: BoardSkin, onExit: @escaping () -> Void) {
+        _engine = StateObject(wrappedValue: GameEngine(mode: mode, aiDifficulty: aiDifficulty))
+        self.skin = skin
         self.onExit = onExit
     }
 
@@ -29,17 +31,9 @@ struct GameView: View {
                         .padding(.top, 12)
 
                     ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                        BoardView(engine: engine, maxWidth: geo.size.width - 40)
+                        BoardView(engine: engine, maxWidth: geo.size.width - 40, skin: skin)
                             .padding(20)
                             .frame(maxWidth: .infinity)
-                    }
-
-                    if engine.mode == .vsAI {
-                        difficultyPicker
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 12)
-                    } else {
-                        Color.clear.frame(height: 12)
                     }
                 }
             }
@@ -56,37 +50,35 @@ struct GameView: View {
     private var header: some View {
         VStack(spacing: 4) {
             HStack {
-                Button { showExitConfirm = true } label: {
-                    // 用 xmark 不用 chevron.left:后者会被系统自动打上语义化的
-                    // "Back" 无障碍标签,触发系统返回手势的特殊处理,把弹窗顶掉。
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 44, height: 44) // Apple HIG 建议的最小可点区域
-                }
-                .buttonStyle(PressableButtonStyle())
-                .accessibilityIdentifier("backToHome")
-                .confirmationDialog("退出这一局?", isPresented: $showExitConfirm, titleVisibility: .visible) {
-                    Button("退出", role: .destructive, action: onExit)
-                    Button("取消", role: .cancel) {}
-                } message: {
-                    Text("当前棋局不会保存")
-                }
+                Button("退出") { showExitConfirm = true }
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 6)
+                    .buttonStyle(PressableButtonStyle())
+                    .accessibilityIdentifier("backToHome")
+                    .alert("退出这一局?", isPresented: $showExitConfirm) {
+                        Button("取消", role: .cancel) {}
+                        Button("退出", role: .destructive, action: onExit)
+                            .accessibilityIdentifier("confirmExit")
+                    } message: {
+                        Text("当前棋局不会保存")
+                    }
 
                 Spacer()
 
-                Button { showRestartConfirm = true } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(PressableButtonStyle())
-                .accessibilityIdentifier("restartGame")
-                .confirmationDialog("重新开始这一局?", isPresented: $showRestartConfirm, titleVisibility: .visible) {
-                    Button("重新开始", role: .destructive) { engine.reset() }
-                    Button("取消", role: .cancel) {}
-                }
+                Button("重开") { showRestartConfirm = true }
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 6)
+                    .buttonStyle(PressableButtonStyle())
+                    .accessibilityIdentifier("restartGame")
+                    .alert("重新开始这一局?", isPresented: $showRestartConfirm) {
+                        Button("取消", role: .cancel) {}
+                        Button("重新开始", role: .destructive) { engine.reset() }
+                            .accessibilityIdentifier("confirmRestart")
+                    }
             }
             .padding(.horizontal, 16)
 
@@ -96,6 +88,9 @@ struct GameView: View {
             Text(turnText)
                 .font(.system(size: 16, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.7))
+            Text("第 \(engine.moveCount) 步")
+                .font(.system(size: 13, design: .rounded))
+                .foregroundStyle(.white.opacity(0.45))
         }
     }
 
@@ -104,29 +99,6 @@ struct GameView: View {
             return engine.currentTurn == engine.humanTeam ? "轮到你了" : "电脑思考中…"
         }
         return engine.currentTurn == .bottom ? "轮到橙方" : "轮到绿方"
-    }
-
-    private var difficultyPicker: some View {
-        HStack(spacing: 8) {
-            ForEach(AIDifficulty.allCases, id: \.rawValue) { difficulty in
-                Button {
-                    engine.aiDifficulty = difficulty
-                } label: {
-                    Text(difficulty.label)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(engine.aiDifficulty == difficulty ? .white : .white.opacity(0.5))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(engine.aiDifficulty == difficulty
-                                      ? Color.orange.opacity(0.8)
-                                      : Color.white.opacity(0.1))
-                        )
-                }
-                .buttonStyle(PressableButtonStyle())
-            }
-        }
     }
 
     private func winnerBanner(_ winner: Team) -> some View {
@@ -200,5 +172,5 @@ extension AIDifficulty {
 }
 
 #Preview {
-    GameView(mode: .vsAI, onExit: {})
+    GameView(mode: .vsAI, aiDifficulty: .medium, skin: .classic, onExit: {})
 }

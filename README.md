@@ -20,13 +20,20 @@ open CheckersKids.xcodeproj
 - 棋盘:完整六角星(121 格)。中间六边形本体不变,另外 5 个尖角(含南)由北尖角的相对坐标绕棋盘中心旋转 60°×k 得到,k=3 精确落回南尖角,靠这个自洽性验证过旋转公式没手推错。南北对战只用南北两个尖角起子,其余四角是空的装饰区。
 - 空格子颜色对比度偏低(深绿背景 + 半透明黑洞),侧边尖角的格子在小尺寸截图里肉眼不好分辨,数据/坐标是对的(有 UI 测试验证),纯视觉待打磨。
 - AI:minimax + alpha-beta,按"棋子到目标区的行进度"打分,分简单/中等/困难三档(对应搜索深度 1/2/3)。轮到 AI 时先"想"半秒再落子,不是秒下。
-- 首页选玩法:人机对战(vsAI)/ 双人本地对战(local,面对面轮流点,不接 AI)。`GameMode` 决定 `GameEngine` 是否会在切换到对方回合时自动请求 AI 走子。
+- 首页选玩法 + 难度:点"人机对战"先展开难度三选一(简单/中等/困难)+"开始对战",难度开局前定好,
+  对局中不能再改(`GameEngine.aiDifficulty` 是 `let`,不是 `@Published var`)。点"双人对战"直接进,
+  不涉及难度。`GameMode` 决定 `GameEngine` 是否会在切换到对方回合时自动请求 AI 走子。
+- 棋盘皮肤:首页底部"皮肤"入口,`BoardSkin` 枚举定义配色(深绿/浅木),用 `@AppStorage` 记住选择,
+  跨次启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,不重复维护配色。
 - 棋子走动有动画:连跳会按 `Move.path` 逐格"跳"给玩家看,不是瞬移到终点;单步/单跳一次平滑滑动。棋子用稳定 id(`Piece`)+ SwiftUI 视图身份来做位移动画,不是靠格子重绘。
+- 对局页头部有步数计数(`GameEngine.moveCount`,双方合计,每次 `perform` +1,重开清零)。
 - 玩家执下方(橙色)先手,电脑/对方执上方(绿色)。棋盘宽度随屏幕自适应,适配 iPad。
-- 退出对局 / 重新开始都有二次确认(参考 Apple HIG:破坏性操作标红、明确文案而非"确定")。
-  这个 iOS 版本(26.5)上 `confirmationDialog` 挂在小图标按钮上会渲染成贴着按钮的气泡样式,
-  只显示破坏性按钮,没有单独的"取消"文字按钮——点气泡外面才是取消,这是系统这版的展示
-  行为,不是漏了取消入口(UITest 里已经改成按这个行为断言)。
+- 退出对局 / 重新开始都是文字按钮("退出"/"重开"),弹**居中 alert**(不是 confirmationDialog)、
+  有独立的"取消"和确认按钮,参考 Apple HIG(破坏性操作标红、文案具体)。之前用
+  `confirmationDialog` 挂小图标按钮时会被系统渲染成没有取消按钮的气泡样式,换成 `.alert` 解决。
+- `.alert`/`confirmationDialog` 这类系统弹窗调制符**必须分别挂在各自的触发按钮上**,不能都挂在
+  外层容器视图——挂一起会出现"点了没反应""XCUITest 找按钮时报 multiple matching elements"这类
+  疑难杂症(这条踩了两次,一次 confirmationDialog 一次 alert,同一个坑)。
 - 按钮有按压态反馈(缩小+变暗)、选子/落子/获胜有触觉反馈,首页↔对局有转场动画。
 
 ## 目录结构
@@ -34,9 +41,10 @@ open CheckersKids.xcodeproj
 ```
 Sources/
   App/         App 入口
-  Models/      棋盘几何、走子规则、对局状态(GameMode/GameEngine)
+  Models/      棋盘几何、走子规则、对局状态(GameMode/GameEngine)、BoardSkin、Haptics
   AI/          minimax AI
-  Views/       HomeView(选模式)/ GameView(对局)/ BoardView(棋盘渲染+动画)
+  Views/       HomeView(选模式+难度+皮肤入口)/ GameView(对局)/ BoardView(棋盘渲染+动画)/
+               SkinPickerView(选皮肤)/ DecorativeBoardPreview(首页装饰棋盘)/ Styles(PressableButtonStyle)
 scripts/
   main.swift   核心规则冒烟测试(棋盘几何/连跳/AI自对弈),不依赖 Xcode 工程
 UITests/

@@ -1,21 +1,29 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var mode: GameMode?
+    @State private var session: (mode: GameMode, difficulty: AIDifficulty)?
+    @AppStorage("boardSkin") private var skinRaw = BoardSkin.classic.rawValue
+
+    private var skin: Binding<BoardSkin> {
+        Binding(
+            get: { BoardSkin(rawValue: skinRaw) ?? .classic },
+            set: { skinRaw = $0.rawValue }
+        )
+    }
 
     var body: some View {
         Group {
-            if let mode {
-                GameView(mode: mode) {
-                    withAnimation(.easeInOut(duration: 0.3)) { self.mode = nil }
+            if let session {
+                GameView(mode: session.mode, aiDifficulty: session.difficulty, skin: skin.wrappedValue) {
+                    withAnimation(.easeInOut(duration: 0.3)) { self.session = nil }
                 }
                 .transition(
                     .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
                     .combined(with: .opacity)
                 )
             } else {
-                HomeView { selected in
-                    withAnimation(.easeInOut(duration: 0.3)) { self.mode = selected }
+                HomeView(skin: skin) { mode, difficulty in
+                    withAnimation(.easeInOut(duration: 0.3)) { self.session = (mode, difficulty) }
                 }
                 .transition(
                     .asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing))

@@ -3,6 +3,7 @@ import SwiftUI
 struct BoardView: View {
     @ObservedObject var engine: GameEngine
     let maxWidth: CGFloat
+    var skin: BoardSkin = .classic
 
     var body: some View {
         let spacing = calcSpacing(maxWidth: maxWidth)
@@ -16,10 +17,7 @@ struct BoardView: View {
             RoundedRectangle(cornerRadius: 20)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.14, green: 0.32, blue: 0.22),
-                            Color(red: 0.08, green: 0.22, blue: 0.15)
-                        ],
+                        colors: skin.boardBackground,
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -87,7 +85,7 @@ struct BoardView: View {
         } label: {
             ZStack {
                 Circle()
-                    .fill(Color.black.opacity(0.3))
+                    .fill(skin.emptyCellColor)
                     .frame(width: pegSize * 0.65, height: pegSize * 0.65)
                     .overlay(
                         Circle()
@@ -111,9 +109,7 @@ struct BoardView: View {
 
     @ViewBuilder
     private func pieceView(for piece: Piece, pegSize: CGFloat, isSelected: Bool) -> some View {
-        let colors = piece.team == .top
-            ? [Color(red: 0.2, green: 0.78, blue: 0.32), Color(red: 0.08, green: 0.5, blue: 0.18)]
-            : [Color(red: 1.0, green: 0.62, blue: 0.1), Color(red: 0.88, green: 0.38, blue: 0.0)]
+        let colors = piece.team == .top ? skin.topPieceColors : skin.bottomPieceColors
 
         ZStack {
             Circle()

@@ -15,17 +15,19 @@ final class GameEngine: ObservableObject {
     @Published var selectedPiece: Hex?
     @Published private(set) var legalDestinations: [Hex] = []
     @Published private(set) var isAnimating = false
+    @Published private(set) var moveCount = 0
 
     let mode: GameMode
     let humanTeam: Team = .bottom
     let aiTeam: Team = .top
-    @Published var aiDifficulty: AIDifficulty = .medium
+    let aiDifficulty: AIDifficulty // 开局前在首页选好,对局中不再改
 
     /// 中途 reset() 会让正在跑的 AI 思考/连跳动画作废,靠这个代数号识别"这次异步任务是不是已经过期了"。
     private var generation = 0
 
-    init(mode: GameMode) {
+    init(mode: GameMode, aiDifficulty: AIDifficulty = .medium) {
         self.mode = mode
+        self.aiDifficulty = aiDifficulty
     }
 
     var isInteractive: Bool {
@@ -57,6 +59,7 @@ final class GameEngine: ObservableObject {
     func perform(_ move: Move) {
         selectedPiece = nil
         legalDestinations = []
+        moveCount += 1
         Haptics.move()
         animateAlongPath(move) { [weak self] in
             guard let self else { return }
@@ -126,5 +129,6 @@ final class GameEngine: ObservableObject {
         selectedPiece = nil
         legalDestinations = []
         isAnimating = false
+        moveCount = 0
     }
 }
