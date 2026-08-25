@@ -69,14 +69,20 @@ struct BoardView: View {
         return maxDist * 2 + pegSize * 2.4
     }
 
-    /// 根据屏幕可用宽度动态计算格子间距，确保棋盘不超出屏幕、也不会在大屏(iPad)上小得可怜。
+    /// 根据屏幕可用宽度动态计算格子间距，确保圆盘不超出屏幕、也不会在大屏(iPad)上小得可怜。
+    /// 圆盘直径要盖住六个尖角(对角线方向,比单纯"最宽一行"的宽度大不少),
+    /// 用手推近似公式量过一次算错过(圆盘右边被裁掉了)——现在改成拿真实的
+    /// discDiameter 公式在参考间距下跑一遍,反解出精确匹配可用宽度的间距,不再猜系数。
     private func calcSpacing(maxWidth: CGFloat) -> CGFloat {
-        // 最宽行有 13 个格子(第 8 行),左右各留 pegSize 的边距
-        // 最宽行宽度 = (13 - 1) * spacing / 2 * 2 + pegSize * 2 = 12 * spacing + spacing * 0.78 * 2
-        // 解方程: spacing * (12 + 1.56) = maxWidth - padding
         let padding: CGFloat = 12
         let available = maxWidth - padding * 2
-        let spacing = available / (12 + 1.56)
+
+        let referenceSpacing: CGFloat = 100
+        let refPoints = sortedCells.map { point(for: $0, spacing: referenceSpacing) }
+        let refCenter = centroid(of: refPoints)
+        let refDiameter = discDiameter(points: refPoints, center: refCenter, pegSize: referenceSpacing * 0.78)
+
+        let spacing = available * referenceSpacing / refDiameter
         return min(max(22, spacing), 80)
     }
 

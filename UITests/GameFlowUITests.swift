@@ -18,6 +18,22 @@ final class GameFlowUITests: XCTestCase {
         return app
     }
 
+    /// 圆盘直径要精确匹配可用宽度,不能超出屏幕——之前算间距的公式是按老的矩形棋盘
+    /// 抄的,没跟着"圆盘要盖住六个尖角"改,导致圆盘右边被裁到屏幕外面。
+    func testDiscBoardStaysWithinScreenBounds() throws {
+        let app = launchIntoGame(mode: "mode_local")
+        XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
+
+        let screenWidth = app.windows.firstMatch.frame.width
+        let leftPeg = app.buttons["peg_-12_4"]
+        let rightPeg = app.buttons["peg_12_4"]
+        XCTAssertTrue(leftPeg.exists && rightPeg.exists)
+        XCTAssertGreaterThanOrEqual(leftPeg.frame.minX, 0, "六角星最左边的格子不该被裁到屏幕外")
+        XCTAssertLessThanOrEqual(
+            rightPeg.frame.maxX, screenWidth, "六角星最右边的格子不该被裁到屏幕外"
+        )
+    }
+
     /// 六角星应该有 121 个格子按钮,side 三角上的远端格子(比如 col12,row4)必须存在;
     /// 只是六边形+南北角的旧版是 81 格,没有这颗子。
     func testFullHexagramCellsExist() throws {
