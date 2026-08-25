@@ -46,6 +46,7 @@ struct HomeView: View {
                         difficultyStep
                     }
                 }
+                .frame(maxWidth: 480)
                 .padding(.horizontal, 32)
 
                 Spacer()

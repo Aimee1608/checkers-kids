@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "filename" : "gem_yellowgreen.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "gem_yellowgreen.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "gem_yellowgreen.png", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}

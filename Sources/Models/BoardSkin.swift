@@ -70,4 +70,28 @@ enum BoardSkin: String, CaseIterable, Identifiable {
         case .rainbow: return [Color(red: 1.0, green: 0.28, blue: 0.68), Color(red: 0.85, green: 0.1, blue: 0.5)]
         }
     }
+
+    /// 棋子贴图(CC0 授权,来自 opengameart.org 的 Gem Stones UI Sprites),
+    /// 换掉纯 SwiftUI 渐变圆,棋子看起来更像颗真宝石。
+    var topPieceImageName: String {
+        switch self {
+        case .classic: return "gem_green"
+        case .light: return "gem_green"
+        case .jelly: return "gem_teal"
+        case .diamond: return "gem_ice"
+        case .planet: return "gem_emerald"
+        case .rainbow: return "gem_yellowgreen"
+        }
+    }
+
+    var bottomPieceImageName: String {
+        switch self {
+        case .classic: return "gem_orange"
+        case .light: return "gem_rust"
+        case .jelly: return "gem_magenta"
+        case .diamond: return "gem_purple"
+        case .planet: return "gem_red"
+        case .rainbow: return "gem_pink"
+        }
+    }
 }

@@ -43,8 +43,8 @@ struct SkinPickerView: View {
                         .fill(LinearGradient(colors: skin.boardBackground, startPoint: .topLeading, endPoint: .bottomTrailing))
                         .frame(height: 90)
                     HStack(spacing: 8) {
-                        Circle().fill(LinearGradient(colors: skin.topPieceColors, startPoint: .top, endPoint: .bottom)).frame(width: 26, height: 26)
-                        Circle().fill(LinearGradient(colors: skin.bottomPieceColors, startPoint: .top, endPoint: .bottom)).frame(width: 26, height: 26)
+                        gemPreview(skin.topPieceImageName)
+                        gemPreview(skin.bottomPieceImageName)
                     }
                 }
                 HStack(spacing: 4) {
@@ -69,6 +69,17 @@ struct SkinPickerView: View {
         }
         .buttonStyle(PressableButtonStyle())
         .accessibilityIdentifier("skin_\(skin.rawValue)")
+    }
+
+    private func gemPreview(_ imageName: String) -> some View {
+        Image(imageName)
+            .resizable()
+            .scaledToFill()
+            .frame(width: 26, height: 26)
+            .scaleEffect(2.1)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
+            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
     }
 }
 

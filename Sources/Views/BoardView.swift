@@ -8,13 +8,15 @@ struct BoardView: View {
     var body: some View {
         let spacing = calcSpacing(maxWidth: maxWidth)
         let pegSize = spacing * 0.78
-        let b = bounds(spacing: spacing)
-        let width = b.maxX - b.minX + pegSize * 2
-        let height = b.maxY - b.minY + pegSize * 2
+        let points = sortedCells.map { point(for: $0, spacing: spacing) }
+        let center = centroid(of: points)
+        let diameter = discDiameter(points: points, center: center, pegSize: pegSize)
+        let half = diameter / 2
 
         ZStack {
-            // Board background
-            RoundedRectangle(cornerRadius: 20)
+            // 棋盘做成圆盘,不是方板——直径按"到几何中心最远的格子"动态算,
+            // 保证六个尖角不会被圆边裁掉,格子/棋子的坐标也相应地以圆心为原点重新定位。
+            Circle()
                 .fill(
                     LinearGradient(
                         colors: skin.boardBackground,
@@ -22,25 +24,25 @@ struct BoardView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: width, height: height)
+                .frame(width: diameter, height: diameter)
                 .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
 
             // 格子层:固定位置,负责点击和空格/落点提示,不随棋子移动。
             ForEach(sortedCells, id: \.self) { hex in
                 let p = point(for: hex, spacing: spacing)
                 cellButton(for: hex, pegSize: pegSize)
-                    .position(x: p.x - b.minX + pegSize, y: p.y - b.minY + pegSize)
+                    .position(x: p.x - center.x + half, y: p.y - center.y + half)
             }
 
             // 棋子层:按 piece.id 单独 track,棋子移动时坐标平滑过渡,不是瞬移。
             ForEach(Array(engine.board.pieces), id: \.value.id) { hex, piece in
                 let p = point(for: hex, spacing: spacing)
                 pieceView(for: piece, pegSize: pegSize, isSelected: engine.selectedPiece == hex)
-                    .position(x: p.x - b.minX + pegSize, y: p.y - b.minY + pegSize)
+                    .position(x: p.x - center.x + half, y: p.y - center.y + half)
                     .allowsHitTesting(false)
             }
         }
-        .frame(width: width, height: height)
+        .frame(width: diameter, height: diameter)
     }
 
     private var sortedCells: [Hex] {
@@ -54,17 +56,20 @@ struct BoardView: View {
         )
     }
 
-    private func bounds(spacing: CGFloat) -> (minX: CGFloat, maxX: CGFloat, minY: CGFloat, maxY: CGFloat) {
-        let points = sortedCells.map { point(for: $0, spacing: spacing) }
-        return (
-            points.map(\.x).min() ?? 0,
-            points.map(\.x).max() ?? 0,
-            points.map(\.y).min() ?? 0,
-            points.map(\.y).max() ?? 0
-        )
+    private func centroid(of points: [CGPoint]) -> CGPoint {
+        let minX = points.map(\.x).min() ?? 0, maxX = points.map(\.x).max() ?? 0
+        let minY = points.map(\.y).min() ?? 0, maxY = points.map(\.y).max() ?? 0
+        return CGPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
     }
 
-    /// 根据屏幕可用宽度动态计算格子间距，确保棋盘不超出屏幕。
+    /// 圆盘直径 = 2×(圆心到最远格子的欧氏距离) + 一点边距,六个尖角旋转对称,
+    /// 到圆心距离本来就相等,这个半径天然就是外接圆半径。
+    private func discDiameter(points: [CGPoint], center: CGPoint, pegSize: CGFloat) -> CGFloat {
+        let maxDist = points.map { hypot($0.x - center.x, $0.y - center.y) }.max() ?? 0
+        return maxDist * 2 + pegSize * 2.4
+    }
+
+    /// 根据屏幕可用宽度动态计算格子间距，确保棋盘不超出屏幕、也不会在大屏(iPad)上小得可怜。
     private func calcSpacing(maxWidth: CGFloat) -> CGFloat {
         // 最宽行有 13 个格子(第 8 行),左右各留 pegSize 的边距
         // 最宽行宽度 = (13 - 1) * spacing / 2 * 2 + pegSize * 2 = 12 * spacing + spacing * 0.78 * 2
@@ -72,7 +77,7 @@ struct BoardView: View {
         let padding: CGFloat = 12
         let available = maxWidth - padding * 2
         let spacing = available / (12 + 1.56)
-        return min(max(22, spacing), 36)
+        return min(max(22, spacing), 80)
     }
 
     @ViewBuilder
@@ -109,30 +114,23 @@ struct BoardView: View {
 
     @ViewBuilder
     private func pieceView(for piece: Piece, pegSize: CGFloat, isSelected: Bool) -> some View {
-        let colors = piece.team == .top ? skin.topPieceColors : skin.bottomPieceColors
+        let imageName = piece.team == .top ? skin.topPieceImageName : skin.bottomPieceImageName
 
         ZStack {
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: colors,
-                        center: .topLeading,
-                        startRadius: 1,
-                        endRadius: pegSize * 0.6
-                    )
-                )
+            // 宝石贴图画布是正方形,但宝石本体画得又扁又窄,scaledToFill 只能让
+            // 画布填满方框、宝石本体还是撑不满——裁成圆之后中间会露棋盘底色。
+            // 额外放大一倍多把宝石本体撑到圆框外面,裁剪掉画布空白和宝石两头尖角。
+            Image(imageName)
+                .resizable()
+                .scaledToFill()
                 .frame(width: pegSize * 0.82, height: pegSize * 0.82)
+                .scaleEffect(2.1)
+                .clipShape(Circle())
                 .overlay(
                     Circle()
                         .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
                 )
                 .shadow(color: .black.opacity(0.35), radius: 3, y: 2)
-
-            // Highlight / shine
-            Circle()
-                .fill(Color.white.opacity(0.22))
-                .frame(width: pegSize * 0.28, height: pegSize * 0.28)
-                .offset(x: -pegSize * 0.12, y: -pegSize * 0.12)
 
             if isSelected {
                 Circle()
