@@ -19,7 +19,9 @@ open CheckersKids.xcodeproj
 
 - 棋盘:完整六角星(121 格)。中间六边形本体不变,另外 5 个尖角(含南)由北尖角的相对坐标绕棋盘中心旋转 60°×k 得到,k=3 精确落回南尖角,靠这个自洽性验证过旋转公式没手推错。南北对战只用南北两个尖角起子,其余四角是空的装饰区。棋盘容器是圆盘(不是方板),直径按"圆心到最远格子的欧氏距离"动态算(六个尖角旋转对称,天然等距,这个距离就是外接圆半径)。
 - 棋盘宽度/格子间距随可用宽度动态算(`BoardView.calcSpacing`),上限从 36pt 提到 80pt——iPad 上可用宽度大很多,之前卡在 36pt 导致棋盘小得可怜、周围一圈空白;首页卡片也加了 `frame(maxWidth: 480)`,iPad 上不会横向拉到离谱。
-- 棋子贴图用了 CC0(公共领域)素材:[opengameart.org 的 Gem Stones UI Sprites](https://opengameart.org/content/assets-free-ui-sprites-gem-stones),商用免署名。原图是画在正方形画布里的横向椭圆宝石,直接铺满画布再裁圆会露出画布空白(棋子看起来像"眼睛"嵌在圆里),所以裁剪前额外 `.scaleEffect(2.1)` 把宝石本体撑满圆形裁剪框。`BoardSkin.topPieceImageName`/`bottomPieceImageName` 按每套皮肤配色从 16 种宝石里挑的,素材本体在 `Sources/Resources/Assets.xcassets`。
+- 棋子是纯色圆形(`BoardSkin.topPieceColor`/`bottomPieceColor`,同配色方案里最协调的一对强调色),
+  叠一层左上角径向渐变高光做出光泽感,不用贴图——之前试过开源宝石贴图,颜色是"就近凑"的近似色,
+  贴图自带的大理石纹理在小尺寸下也显脏,不如纯色饱和干净。
 - AI:minimax + alpha-beta,按"棋子到目标区的行进度"打分,分简单/中等/困难三档(对应搜索深度 1/2/3)。轮到 AI 时先"想"半秒再落子,不是秒下。
 - 首页选玩法 + 难度:点"人机对战"先展开难度三选一(简单/中等/困难)+"开始对战",难度开局前定好,
   对局中不能再改(`GameEngine.aiDifficulty` 是 `let`,不是 `@Published var`)。点"双人对战"直接进,

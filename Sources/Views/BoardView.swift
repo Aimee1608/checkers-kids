@@ -120,22 +120,27 @@ struct BoardView: View {
 
     @ViewBuilder
     private func pieceView(for piece: Piece, pegSize: CGFloat, isSelected: Bool) -> some View {
-        let imageName = piece.team == .top ? skin.topPieceImageName : skin.bottomPieceImageName
+        let color = piece.team == .top ? skin.topPieceColor : skin.bottomPieceColor
 
         ZStack {
-            // 宝石贴图画布是正方形,但宝石本体画得又扁又窄,scaledToFill 只能让
-            // 画布填满方框、宝石本体还是撑不满——裁成圆之后中间会露棋盘底色。
-            // 额外放大一倍多把宝石本体撑到圆框外面,裁剪掉画布空白和宝石两头尖角。
-            Image(imageName)
-                .resizable()
-                .scaledToFill()
-                .frame(width: pegSize * 0.82, height: pegSize * 0.82)
-                .scaleEffect(2.1)
-                .clipShape(Circle())
+            Circle()
+                .fill(color)
                 .overlay(
                     Circle()
-                        .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+                        .fill(
+                            RadialGradient(
+                                colors: [Color.white.opacity(0.55), Color.white.opacity(0)],
+                                center: UnitPoint(x: 0.32, y: 0.28),
+                                startRadius: 0,
+                                endRadius: pegSize * 0.5
+                            )
+                        )
                 )
+                .overlay(
+                    Circle()
+                        .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
+                )
+                .frame(width: pegSize * 0.82, height: pegSize * 0.82)
                 .shadow(color: .black.opacity(0.35), radius: 3, y: 2)
 
             if isSelected {

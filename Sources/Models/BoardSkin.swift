@@ -34,23 +34,24 @@ enum BoardSkin: String, CaseIterable, Identifiable {
 
     var emptyCellColor: Color { .white.opacity(0.12) }
 
-    var topPieceImageName: String {
+    /// 每套配色里最协调的一对强调色,跟 boardBackground 同源,不是另外近似凑的。
+    var topPieceColor: Color {
         switch self {
-        case .catppuccinMocha: return "gem_green"
-        case .nord: return "gem_green"
-        case .dracula: return "gem_emerald"
-        case .solarizedDark: return "gem_yellowgreen"
-        case .tokyoNight: return "gem_green"
+        case .catppuccinMocha: return Color(hex: 0xA6E3A1)
+        case .nord: return Color(hex: 0xA3BE8C)
+        case .dracula: return Color(hex: 0x50FA7B)
+        case .solarizedDark: return Color(hex: 0x859900)
+        case .tokyoNight: return Color(hex: 0x9ECE6A)
         }
     }
 
-    var bottomPieceImageName: String {
+    var bottomPieceColor: Color {
         switch self {
-        case .catppuccinMocha: return "gem_orange"
-        case .nord: return "gem_rust"
-        case .dracula: return "gem_pink"
-        case .solarizedDark: return "gem_orange"
-        case .tokyoNight: return "gem_red"
+        case .catppuccinMocha: return Color(hex: 0xFAB387)
+        case .nord: return Color(hex: 0xD08770)
+        case .dracula: return Color(hex: 0xFF79C6)
+        case .solarizedDark: return Color(hex: 0xCB4B16)
+        case .tokyoNight: return Color(hex: 0xF7768E)
         }
     }
 }
