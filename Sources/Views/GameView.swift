@@ -6,6 +6,7 @@ struct GameView: View {
     let onExit: () -> Void
     @State private var showExitConfirm = false
     @State private var showRestartConfirm = false
+    @ObservedObject private var sound = SoundManager.shared
 
     init(
         mode: GameMode, aiDifficulty: AIDifficulty, jumpRule: JumpRule, skin: BoardSkin,
@@ -71,6 +72,16 @@ struct GameView: View {
                 }
 
                 Spacer()
+
+                Button { sound.toggle() } label: {
+                    Image(systemName: sound.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityIdentifier("toggleSound")
+                .accessibilityLabel(sound.isEnabled ? "声音已开启" : "声音已关闭")
 
                 Button { showRestartConfirm = true } label: {
                     Image(systemName: "arrow.clockwise")

@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var step: Step = .chooseMode
     @State private var difficulty: AIDifficulty = .medium
     @State private var showingSkinPicker = false
+    @ObservedObject private var sound = SoundManager.shared
 
     var body: some View {
         ZStack {
@@ -181,19 +182,36 @@ struct HomeView: View {
     }
 
     private var utilityRow: some View {
-        Button {
-            showingSkinPicker = true
-        } label: {
-            VStack(spacing: 6) {
-                Image(systemName: "paintpalette.fill")
-                    .font(.system(size: 22))
-                Text("皮肤")
-                    .font(.system(size: 13, design: .rounded))
+        HStack(spacing: 36) {
+            Button {
+                sound.toggle()
+            } label: {
+                VStack(spacing: 6) {
+                    Image(systemName: sound.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        .font(.system(size: 22))
+                    Text("声音")
+                        .font(.system(size: 13, design: .rounded))
+                }
+                .foregroundStyle(.white.opacity(0.7))
             }
-            .foregroundStyle(.white.opacity(0.7))
+            .buttonStyle(PressableButtonStyle())
+            .accessibilityIdentifier("toggleSound")
+            .accessibilityLabel(sound.isEnabled ? "声音已开启" : "声音已关闭")
+
+            Button {
+                showingSkinPicker = true
+            } label: {
+                VStack(spacing: 6) {
+                    Image(systemName: "paintpalette.fill")
+                        .font(.system(size: 22))
+                    Text("皮肤")
+                        .font(.system(size: 13, design: .rounded))
+                }
+                .foregroundStyle(.white.opacity(0.7))
+            }
+            .buttonStyle(PressableButtonStyle())
+            .accessibilityIdentifier("openSkinPicker")
         }
-        .buttonStyle(PressableButtonStyle())
-        .accessibilityIdentifier("openSkinPicker")
     }
 
     private func modeButton(

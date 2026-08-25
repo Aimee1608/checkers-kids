@@ -174,6 +174,28 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5), "选完空格跳规则后应该能正常进对局")
     }
 
+    /// 声音开关首页和对局页都要有(不是只有一处能关),状态是同一个开关、共享的——
+    /// 首页关掉之后进对局,对局页里的图标也应该显示"已关闭"。
+    func testSoundToggleExistsOnHomeAndInGame() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        let homeToggle = app.buttons["toggleSound"]
+        XCTAssertTrue(homeToggle.waitForExistence(timeout: 3), "首页应该有声音开关")
+        let wasOn = homeToggle.label == "声音已开启"
+        homeToggle.tap()
+        let expectedLabel = wasOn ? "声音已关闭" : "声音已开启"
+        XCTAssertEqual(homeToggle.label, expectedLabel, "点一下开关,首页图标状态应该跟着变")
+
+        app.buttons["mode_local"].tap()
+        app.buttons["startLocal"].tap()
+        XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
+
+        let gameToggle = app.buttons["toggleSound"]
+        XCTAssertTrue(gameToggle.waitForExistence(timeout: 3), "对局页也应该有声音开关")
+        XCTAssertEqual(gameToggle.label, expectedLabel, "对局页应该看到跟首页一样的开关状态,是同一个设置")
+    }
+
     /// 首页"皮肤"入口能打开选择页、切换后棋盘颜色确实变了(用棋盘背板的截图对比太脆弱,
     /// 这里只验证流程能走通:能打开、能选、能关闭,颜色跑到 BoardSkin 那层单独用截图人工核对过)。
     func testSkinPickerOpensAndCloses() throws {
