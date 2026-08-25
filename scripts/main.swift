@@ -20,33 +20,51 @@ let moves0 = MoveGenerator.availableMoves(for: bottomFront, on: board0, jumpRule
 assertTrue(!moves0.isEmpty, "起始局面前排棋子有合法走法(\(moves0.count) 种)")
 assertTrue(moves0.allSatisfy { !$0.isJump }, "起始局面没有可跳的子,应该全是单步")
 
-// 3. 连跳:手动摆一个连跳局面验证 path 正确
-var jumpBoard = Board()
-// 清空,自己摆:(0,8) 出发子, (0,7)/(1,-1,-1 方向邻居) 挡子, 落点应为 (0,6) 之类
-// 用最简单的一条直线连跳:(col:0,row:8)->跳过(col:0,row:7)非法(row 差1 不是同方向2步)
-// 直接用 neighbors()/jumpLanding 生成器自检,而不是手摆局面,避免我这边脑内画图出错。
+// 3. 跳跃落点公式自检:同方向走 2 步应该正好是单步偏移量的 2 倍(doubled coordinates 下
+//    同方向多步是线性的),不直接摆局面验证,避免脑内画图算错。
 let center = Hex(col: 0, row: 8)
 for (i, n) in center.neighbors().enumerated() {
-    let landing = center.jumpLanding(direction: i)
+    let landing = center.stepped(direction: i, steps: 2)
     let dc = landing.col - center.col
     let dr = landing.row - center.row
     let ndc = n.col - center.col
     let ndr = n.row - center.row
-    assertTrue(dc == ndc * 2 && dr == ndr * 2, "方向 \(i): 跳跃落点是邻居方向的 2 倍位移")
+    assertTrue(dc == ndc * 2 && dr == ndr * 2, "方向 \(i): 走 2 步是单步偏移量的 2 倍")
 }
 
-// 4. 空格跳规则:标准规则下棋盘中心空区没子可跳,"空格跳"规则下隔着空格也该能跳、
-//    能到达的格子应该明显变多(同一个位置对比,避免两套规则各摆一个局面互相不可比)。
-var openBoard = Board()
-openBoard.apply(Move(from: Hex(col: 1, row: 13), to: Hex(col: 0, row: 12), path: [], isJump: false))
-let fromOpen = Hex(col: 0, row: 12)
-let standardMoves = MoveGenerator.availableMoves(for: fromOpen, on: openBoard, jumpRule: .standard)
-let emptyJumpMoves = MoveGenerator.availableMoves(for: fromOpen, on: openBoard, jumpRule: .allowEmpty)
-assertTrue(standardMoves.allSatisfy { !$0.isJump }, "棋盘中心是空的,标准规则下不该有跳跃(没子可跳)")
-assertTrue(emptyJumpMoves.contains { $0.isJump }, "空格跳规则下,隔着空格也应该能跳")
+// 4. 空格跳规则:跳跃永远是"隔一子对称跳",落点是以被跳的子为镜像中心跟起点对称的那一格。
+//    Board.apply 不做合法性校验,借用已有棋子直接摆到要测的位置,不用绕合法走法拼局面。
+//    摆法(都在 row8 这条中心横线上,方向 index1 = 每步 col+2):
+//    A(-8,8) --空--空-- B(-2,8) --空--空--空-- 落点(4,8)
+//    A 到 B 隔了 2 个空格(col -6/-4),B 到落点之间也是 3 个空格(col 0/2/4 里 4 正是落点本身)。
+var symBoard = Board()
+let bottomHexes = symBoard.pieces(of: .bottom)
+let topHexes = symBoard.pieces(of: .top)
+let pieceA = bottomHexes[0]
+let pieceB = topHexes[0]
+symBoard.apply(Move(from: pieceA, to: Hex(col: -8, row: 8), path: [], isJump: false))
+symBoard.apply(Move(from: pieceB, to: Hex(col: -2, row: 8), path: [], isJump: false))
+
+let fromA = Hex(col: -8, row: 8)
+let expectedLanding = Hex(col: 4, row: 8) // A 到 B 隔 2 步跑道,落点应该是 B 再往前"跑道等长"的镜像点
+
+let standardMoves = MoveGenerator.availableMoves(for: fromA, on: symBoard, jumpRule: .standard)
+assertTrue(!standardMoves.contains { $0.isJump }, "被跳的子隔着 2 个空格,标准规则(必须紧邻)下不该能跳")
+
+let emptyJumpMoves = MoveGenerator.availableMoves(for: fromA, on: symBoard, jumpRule: .allowEmpty)
 assertTrue(
-    Set(emptyJumpMoves.map(\.to)).count > Set(standardMoves.map(\.to)).count,
-    "空格跳规则应该比标准规则能到达更多格子"
+    emptyJumpMoves.contains { $0.isJump && $0.to == expectedLanding },
+    "空格跳规则下应该能对称跳到镜像落点 \(expectedLanding),不是随便一个更远的格子"
+)
+
+// 落点前面(被跳的子和落点之间)如果被另一颗子挡住,即使隔着空格规则打开也不该能跳过去。
+var blockedBoard = symBoard
+let blocker = topHexes[1]
+blockedBoard.apply(Move(from: blocker, to: Hex(col: 2, row: 8), path: [], isJump: false))
+let blockedMoves = MoveGenerator.availableMoves(for: fromA, on: blockedBoard, jumpRule: .allowEmpty)
+assertTrue(
+    !blockedMoves.contains { $0.isJump && $0.to == expectedLanding },
+    "被跳的子和落点之间被另一颗子挡住,不该能跳过去"
 )
 
 // 5. AI 不崩溃、不卡死,自对弈打满 60 步验证收敛(避免死循环/性能炸)

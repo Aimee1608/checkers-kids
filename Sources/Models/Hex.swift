@@ -14,12 +14,13 @@ struct Hex: Hashable {
     ]
 
     func neighbors() -> [Hex] {
-        Hex.neighborOffsets.map { Hex(col: col + $0.dc, row: row + $0.dr) }
+        (0..<6).map { stepped(direction: $0, steps: 1) }
     }
 
-    /// 沿 neighborOffsets[direction] 方向跳过一个棋子后的落点。
-    func jumpLanding(direction: Int) -> Hex {
+    /// 沿 neighborOffsets[direction] 方向走 steps 步(doubled coordinates 下同方向多步就是
+    /// 单步偏移量的整数倍,不用逐格累加)。
+    func stepped(direction: Int, steps: Int) -> Hex {
         let o = Hex.neighborOffsets[direction]
-        return Hex(col: col + o.dc * 2, row: row + o.dr * 2)
+        return Hex(col: col + o.dc * steps, row: row + o.dr * steps)
     }
 }
