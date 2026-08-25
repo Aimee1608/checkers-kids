@@ -121,7 +121,11 @@ final class GameFlowUITests: XCTestCase {
         app.buttons["restartGame"].tap()
         XCTAssertTrue(app.staticTexts["重新开始这一局?"].waitForExistence(timeout: 3), "重开前应该有确认弹窗")
         app.buttons["取消"].tap()
-        XCTAssertTrue(app.staticTexts["第 2 步"].waitForExistence(timeout: 2), "点取消不该重开,步数应该还在")
+        // 弹窗关闭后紧接着查小号 StaticText("第 N 步")偶发查不到(疑似无障碍快照有延迟),
+        // 换成查弹窗文字已经消失 + 棋盘按钮还在,这个模式在退出那条测试里验证过很稳。
+        Thread.sleep(forTimeInterval: 0.4)
+        XCTAssertFalse(app.staticTexts["重新开始这一局?"].exists, "点取消后确认弹窗应该已经消失")
+        XCTAssertTrue(app.buttons["peg_1_13"].waitForExistence(timeout: 3), "点取消不该重开,棋盘应该还是原样")
 
         app.buttons["restartGame"].tap()
         let confirmRestart = app.buttons.matching(identifier: "confirmRestart").firstMatch

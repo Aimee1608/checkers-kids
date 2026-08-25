@@ -50,35 +50,39 @@ struct GameView: View {
     private var header: some View {
         VStack(spacing: 4) {
             HStack {
-                Button("退出") { showExitConfirm = true }
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 6)
-                    .buttonStyle(PressableButtonStyle())
-                    .accessibilityIdentifier("backToHome")
-                    .alert("退出这一局?", isPresented: $showExitConfirm) {
-                        Button("取消", role: .cancel) {}
-                        Button("退出", role: .destructive, action: onExit)
-                            .accessibilityIdentifier("confirmExit")
-                    } message: {
-                        Text("当前棋局不会保存")
-                    }
+                Button { showExitConfirm = true } label: {
+                    Image(systemName: "house.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityIdentifier("backToHome")
+                .accessibilityLabel("退出对局")
+                .alert("退出这一局?", isPresented: $showExitConfirm) {
+                    Button("取消", role: .cancel) {}
+                    Button("退出", role: .destructive, action: onExit)
+                        .accessibilityIdentifier("confirmExit")
+                } message: {
+                    Text("当前棋局不会保存")
+                }
 
                 Spacer()
 
-                Button("重开") { showRestartConfirm = true }
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 6)
-                    .buttonStyle(PressableButtonStyle())
-                    .accessibilityIdentifier("restartGame")
-                    .alert("重新开始这一局?", isPresented: $showRestartConfirm) {
-                        Button("取消", role: .cancel) {}
-                        Button("重新开始", role: .destructive) { engine.reset() }
-                            .accessibilityIdentifier("confirmRestart")
-                    }
+                Button { showRestartConfirm = true } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityIdentifier("restartGame")
+                .accessibilityLabel("重开对局")
+                .alert("重新开始这一局?", isPresented: $showRestartConfirm) {
+                    Button("取消", role: .cancel) {}
+                    Button("重新开始", role: .destructive) { engine.reset() }
+                        .accessibilityIdentifier("confirmRestart")
+                }
             }
             .padding(.horizontal, 16)
 
