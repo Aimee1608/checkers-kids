@@ -2,11 +2,12 @@ import SwiftUI
 
 struct HomeView: View {
     @Binding var skin: BoardSkin
-    let onStart: (GameMode, AIDifficulty) -> Void
+    @Binding var jumpRule: JumpRule
+    let onStart: (GameMode, AIDifficulty, JumpRule) -> Void
 
-    private enum Step {
+    private enum Step: Equatable {
         case chooseMode
-        case chooseDifficulty
+        case chooseSettings(GameMode)
     }
 
     @State private var step: Step = .chooseMode
@@ -34,16 +35,15 @@ struct HomeView: View {
                     Text("跳跳棋")
                         .font(.system(size: 44, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text(step == .chooseMode ? "选个玩法开始吧" : "选个难度")
+                    Text(stepSubtitle)
                         .font(.system(size: 17, design: .rounded))
                         .foregroundStyle(.white.opacity(0.6))
                 }
 
                 Group {
-                    if step == .chooseMode {
-                        modeStep
-                    } else {
-                        difficultyStep
+                    switch step {
+                    case .chooseMode: modeStep
+                    case .chooseSettings(let mode): settingsStep(for: mode)
                     }
                 }
                 .frame(maxWidth: 480)
@@ -60,65 +60,70 @@ struct HomeView: View {
         }
     }
 
+    private var stepSubtitle: String {
+        switch step {
+        case .chooseMode: return "选个玩法开始吧"
+        case .chooseSettings: return "选好规则再开始"
+        }
+    }
+
     private var modeStep: some View {
         VStack(spacing: 16) {
             modeButton(
                 title: "人机对战", subtitle: "和电脑比一比", emoji: "🤖",
                 accent: Color.orange
             ) {
-                withAnimation(.easeInOut(duration: 0.25)) { step = .chooseDifficulty }
+                withAnimation(.easeInOut(duration: 0.25)) { step = .chooseSettings(.vsAI) }
             }
             .accessibilityIdentifier("mode_vsAI")
 
             modeButton(
                 title: "双人对战", subtitle: "面对面,轮流点", emoji: "🧑‍🤝‍🧑",
                 accent: Color.green
-            ) { onStart(.local, difficulty) }
+            ) {
+                withAnimation(.easeInOut(duration: 0.25)) { step = .chooseSettings(.local) }
+            }
             .accessibilityIdentifier("mode_local")
         }
     }
 
-    private var difficultyStep: some View {
-        VStack(spacing: 20) {
-            VStack(spacing: 12) {
-                ForEach(AIDifficulty.allCases, id: \.rawValue) { level in
-                    Button {
-                        Haptics.select()
-                        difficulty = level
-                    } label: {
-                        HStack {
-                            Text(level.label)
-                                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                            Spacer()
-                            if difficulty == level {
-                                Image(systemName: "checkmark.circle.fill")
-                            }
+    @ViewBuilder
+    private func settingsStep(for mode: GameMode) -> some View {
+        VStack(spacing: 24) {
+            if mode == .vsAI {
+                settingsGroup(title: "难度") {
+                    ForEach(AIDifficulty.allCases, id: \.rawValue) { level in
+                        optionRow(title: level.label, isSelected: difficulty == level) {
+                            Haptics.select()
+                            difficulty = level
                         }
-                        .foregroundStyle(.white)
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(difficulty == level ? Color.orange.opacity(0.85) : Color.white.opacity(0.1))
-                        )
+                        .accessibilityIdentifier("difficulty_\(level.rawValue)")
                     }
-                    .buttonStyle(PressableButtonStyle())
-                    .accessibilityIdentifier("difficulty_\(level.rawValue)")
+                }
+            }
+
+            settingsGroup(title: "跳跃规则") {
+                ForEach(JumpRule.allCases) { rule in
+                    optionRow(title: rule.label, subtitle: rule.subtitle, isSelected: jumpRule == rule) {
+                        Haptics.select()
+                        jumpRule = rule
+                    }
+                    .accessibilityIdentifier("jumpRule_\(rule.rawValue)")
                 }
             }
 
             Button {
-                onStart(.vsAI, difficulty)
+                onStart(mode, difficulty, jumpRule)
             } label: {
                 Text("开始对战")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Color.green))
+                    .background(RoundedRectangle(cornerRadius: 16).fill(mode == .vsAI ? Color.orange : Color.green))
             }
             .buttonStyle(PressableButtonStyle())
-            .accessibilityIdentifier("startVsAI")
+            .accessibilityIdentifier(mode == .vsAI ? "startVsAI" : "startLocal")
 
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) { step = .chooseMode }
@@ -130,6 +135,45 @@ struct HomeView: View {
             .buttonStyle(PressableButtonStyle())
             .accessibilityIdentifier("backToModeStep")
         }
+    }
+
+    private func settingsGroup<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
+            VStack(spacing: 12) { content() }
+        }
+    }
+
+    private func optionRow(
+        title: String, subtitle: String? = nil, isSelected: Bool, action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 13, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.65))
+                    }
+                }
+                Spacer()
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.vertical, 14)
+            .padding(.horizontal, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? Color.orange.opacity(0.85) : Color.white.opacity(0.1))
+            )
+        }
+        .buttonStyle(PressableButtonStyle())
     }
 
     private var utilityRow: some View {
@@ -188,5 +232,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(skin: .constant(.catppuccinMocha), onStart: { _, _ in })
+    HomeView(skin: .constant(.catppuccinMocha), jumpRule: .constant(.standard), onStart: { _, _, _ in })
 }

@@ -9,7 +9,8 @@ struct Move: Hashable {
 
 enum MoveGenerator {
     /// 单步移动 + 连跳,一次性返回某个棋子在当前棋盘上所有合法落点。
-    static func availableMoves(for piece: Hex, on board: Board) -> [Move] {
+    /// jumpRule == .allowEmpty 时,中间格是空的也能跳(不只是必须隔着棋子)。
+    static func availableMoves(for piece: Hex, on board: Board, jumpRule: JumpRule) -> [Move] {
         var moves: [Move] = []
 
         for n in piece.neighbors() where board.cells.contains(n) && board.piece(at: n) == nil {
@@ -19,7 +20,8 @@ enum MoveGenerator {
         var visitedLandings: Set<Hex> = [piece]
         func explore(from: Hex, path: [Hex]) {
             for (direction, n) in from.neighbors().enumerated() {
-                guard board.cells.contains(n), board.piece(at: n) != nil else { continue }
+                guard board.cells.contains(n) else { continue }
+                guard board.piece(at: n) != nil || jumpRule == .allowEmpty else { continue }
                 let landing = from.jumpLanding(direction: direction)
                 guard board.cells.contains(landing),
                       board.piece(at: landing) == nil,
@@ -35,7 +37,7 @@ enum MoveGenerator {
         return moves
     }
 
-    static func allMoves(for team: Team, on board: Board) -> [Move] {
-        board.pieces(of: team).flatMap { availableMoves(for: $0, on: board) }
+    static func allMoves(for team: Team, on board: Board, jumpRule: JumpRule) -> [Move] {
+        board.pieces(of: team).flatMap { availableMoves(for: $0, on: board, jumpRule: jumpRule) }
     }
 }

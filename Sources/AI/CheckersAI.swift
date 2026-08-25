@@ -16,9 +16,9 @@ enum AIDifficulty: Int, CaseIterable {
 
 enum CheckersAI {
     /// 在后台线程跑 minimax,避免卡主线程/UI。
-    static func bestMove(for team: Team, on board: Board, difficulty: AIDifficulty) async -> Move? {
+    static func bestMove(for team: Team, on board: Board, difficulty: AIDifficulty, jumpRule: JumpRule) async -> Move? {
         await Task.detached(priority: .userInitiated) {
-            let moves = MoveGenerator.allMoves(for: team, on: board)
+            let moves = MoveGenerator.allMoves(for: team, on: board, jumpRule: jumpRule)
             guard !moves.isEmpty else { return nil }
 
             var bestScore = Int.min
@@ -33,6 +33,7 @@ enum CheckersAI {
                     depth: difficulty.searchDepth - 1,
                     maximizing: false,
                     aiTeam: team,
+                    jumpRule: jumpRule,
                     alpha: alpha,
                     beta: beta
                 )
@@ -54,6 +55,7 @@ enum CheckersAI {
         depth: Int,
         maximizing: Bool,
         aiTeam: Team,
+        jumpRule: JumpRule,
         alpha: Int,
         beta: Int
     ) -> Int {
@@ -63,7 +65,7 @@ enum CheckersAI {
         if board.isWon(by: aiTeam.opponent) { return -100_000 - depth }
         if depth == 0 { return evaluate(board: board, for: aiTeam) }
 
-        let moves = MoveGenerator.allMoves(for: team, on: board)
+        let moves = MoveGenerator.allMoves(for: team, on: board, jumpRule: jumpRule)
         guard !moves.isEmpty else { return evaluate(board: board, for: aiTeam) }
 
         var alpha = alpha
@@ -74,7 +76,7 @@ enum CheckersAI {
             for move in moves {
                 let score = minimax(
                     board: board.applying(move), depth: depth - 1, maximizing: false,
-                    aiTeam: aiTeam, alpha: alpha, beta: beta
+                    aiTeam: aiTeam, jumpRule: jumpRule, alpha: alpha, beta: beta
                 )
                 best = max(best, score)
                 alpha = max(alpha, best)
@@ -86,7 +88,7 @@ enum CheckersAI {
             for move in moves {
                 let score = minimax(
                     board: board.applying(move), depth: depth - 1, maximizing: true,
-                    aiTeam: aiTeam, alpha: alpha, beta: beta
+                    aiTeam: aiTeam, jumpRule: jumpRule, alpha: alpha, beta: beta
                 )
                 best = min(best, score)
                 beta = min(beta, best)

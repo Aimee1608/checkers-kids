@@ -1,8 +1,8 @@
 import XCTest
 
 final class GameFlowUITests: XCTestCase {
-    /// vsAI 现在要先经过首页的难度选择步骤(点"人机对战"→选难度→点"开始对战"),
-    /// local 还是直接进。
+    /// 两种模式现在都要先经过首页的"对局设置"步骤(点模式→选难度/跳跃规则→点"开始对战"),
+    /// 双人对战不显示难度,但跳跃规则两种模式都要能设。
     private func launchIntoGame(mode identifier: String) -> XCUIApplication {
         let app = XCUIApplication()
         app.launch()
@@ -10,11 +10,10 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(modeButton.waitForExistence(timeout: 5), "首页应该有 \(identifier) 这个模式按钮")
         modeButton.tap()
 
-        if identifier == "mode_vsAI" {
-            let start = app.buttons["startVsAI"]
-            XCTAssertTrue(start.waitForExistence(timeout: 3), "选人机对战后应该进到难度选择步骤")
-            start.tap()
-        }
+        let startId = identifier == "mode_vsAI" ? "startVsAI" : "startLocal"
+        let start = app.buttons[startId]
+        XCTAssertTrue(start.waitForExistence(timeout: 3), "选完模式后应该进到对局设置步骤")
+        start.tap()
         return app
     }
 
@@ -155,6 +154,24 @@ final class GameFlowUITests: XCTestCase {
         app.buttons["peg_1_13"].tap()
         app.buttons["peg_0_12"].tap()
         XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 15), "重开后棋子位置应该也复位了,这步棋应该还能走一遍")
+    }
+
+    /// 首页"对局设置"步骤里应该能设跳跃规则,人机对战和双人对战都要能设到,
+    /// 不能只有其中一种模式能设(之前双人对战直接进对局,设置不到)。
+    func testJumpRulePickerAvailableForBothModes() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["mode_vsAI"].tap()
+        XCTAssertTrue(app.buttons["jumpRule_standard"].waitForExistence(timeout: 3), "人机对战设置步骤应该有跳跃规则选项")
+        XCTAssertTrue(app.buttons["jumpRule_allowEmpty"].exists)
+        app.buttons["backToModeStep"].tap()
+
+        app.buttons["mode_local"].tap()
+        XCTAssertTrue(app.buttons["jumpRule_allowEmpty"].waitForExistence(timeout: 3), "双人对战设置步骤也应该有跳跃规则选项")
+        app.buttons["jumpRule_allowEmpty"].tap()
+        app.buttons["startLocal"].tap()
+        XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5), "选完空格跳规则后应该能正常进对局")
     }
 
     /// 首页"皮肤"入口能打开选择页、切换后棋盘颜色确实变了(用棋盘背板的截图对比太脆弱,

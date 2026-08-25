@@ -2,7 +2,7 @@ import Foundation
 import Combine
 import SwiftUI
 
-enum GameMode {
+enum GameMode: Equatable {
     case vsAI
     case local // 双人本地对战(面对面传着玩),两边都是人手动点
 }
@@ -21,13 +21,15 @@ final class GameEngine: ObservableObject {
     let humanTeam: Team = .bottom
     let aiTeam: Team = .top
     let aiDifficulty: AIDifficulty // 开局前在首页选好,对局中不再改
+    let jumpRule: JumpRule // 同样开局前定好,双方(含 AI)全程按同一套规则算合法走法
 
     /// 中途 reset() 会让正在跑的 AI 思考/连跳动画作废,靠这个代数号识别"这次异步任务是不是已经过期了"。
     private var generation = 0
 
-    init(mode: GameMode, aiDifficulty: AIDifficulty = .medium) {
+    init(mode: GameMode, aiDifficulty: AIDifficulty = .medium, jumpRule: JumpRule = .standard) {
         self.mode = mode
         self.aiDifficulty = aiDifficulty
+        self.jumpRule = jumpRule
     }
 
     var isInteractive: Bool {
@@ -39,7 +41,7 @@ final class GameEngine: ObservableObject {
         guard isInteractive else { return }
 
         if let selected = selectedPiece, legalDestinations.contains(hex) {
-            let moves = MoveGenerator.availableMoves(for: selected, on: board)
+            let moves = MoveGenerator.availableMoves(for: selected, on: board, jumpRule: jumpRule)
             if let move = moves.first(where: { $0.to == hex }) {
                 perform(move)
             }
@@ -52,7 +54,7 @@ final class GameEngine: ObservableObject {
             return
         }
         selectedPiece = hex
-        legalDestinations = MoveGenerator.availableMoves(for: hex, on: board).map(\.to)
+        legalDestinations = MoveGenerator.availableMoves(for: hex, on: board, jumpRule: jumpRule).map(\.to)
         Haptics.select()
     }
 
@@ -107,11 +109,12 @@ final class GameEngine: ObservableObject {
         let snapshot = board
         let team = aiTeam
         let difficulty = aiDifficulty
+        let rule = jumpRule
         let myGeneration = generation
         Task {
             // 先"想"一下,别一变成电脑回合就秒下,小朋友根本反应不过来。
             try? await Task.sleep(nanoseconds: 500_000_000)
-            let move = await CheckersAI.bestMove(for: team, on: snapshot, difficulty: difficulty)
+            let move = await CheckersAI.bestMove(for: team, on: snapshot, difficulty: difficulty, jumpRule: rule)
             await MainActor.run {
                 guard self.generation == myGeneration,
                       let move, self.currentTurn == team, self.winner == nil else { return }

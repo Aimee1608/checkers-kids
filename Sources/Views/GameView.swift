@@ -7,8 +7,11 @@ struct GameView: View {
     @State private var showExitConfirm = false
     @State private var showRestartConfirm = false
 
-    init(mode: GameMode, aiDifficulty: AIDifficulty, skin: BoardSkin, onExit: @escaping () -> Void) {
-        _engine = StateObject(wrappedValue: GameEngine(mode: mode, aiDifficulty: aiDifficulty))
+    init(
+        mode: GameMode, aiDifficulty: AIDifficulty, jumpRule: JumpRule, skin: BoardSkin,
+        onExit: @escaping () -> Void
+    ) {
+        _engine = StateObject(wrappedValue: GameEngine(mode: mode, aiDifficulty: aiDifficulty, jumpRule: jumpRule))
         self.skin = skin
         self.onExit = onExit
     }
@@ -176,5 +179,5 @@ extension AIDifficulty {
 }
 
 #Preview {
-    GameView(mode: .vsAI, aiDifficulty: .medium, skin: .catppuccinMocha, onExit: {})
+    GameView(mode: .vsAI, aiDifficulty: .medium, jumpRule: .standard, skin: .catppuccinMocha, onExit: {})
 }

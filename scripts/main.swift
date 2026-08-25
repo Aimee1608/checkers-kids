@@ -16,7 +16,7 @@ assertTrue(board0.pieces(of: .bottom).count == 10, "bottom 起始 10 个子")
 
 // 2. 单步走子:任意一个 bottom 前排棋子应该有朝中心的空格可走
 let bottomFront = Hex(col: 1, row: 13) // 南尖角最靠近中心那一排,该行合法列为奇数
-let moves0 = MoveGenerator.availableMoves(for: bottomFront, on: board0)
+let moves0 = MoveGenerator.availableMoves(for: bottomFront, on: board0, jumpRule: .standard)
 assertTrue(!moves0.isEmpty, "起始局面前排棋子有合法走法(\(moves0.count) 种)")
 assertTrue(moves0.allSatisfy { !$0.isJump }, "起始局面没有可跳的子,应该全是单步")
 
@@ -35,7 +35,21 @@ for (i, n) in center.neighbors().enumerated() {
     assertTrue(dc == ndc * 2 && dr == ndr * 2, "方向 \(i): 跳跃落点是邻居方向的 2 倍位移")
 }
 
-// 4. AI 不崩溃、不卡死,自对弈打满 60 步验证收敛(避免死循环/性能炸)
+// 4. 空格跳规则:标准规则下棋盘中心空区没子可跳,"空格跳"规则下隔着空格也该能跳、
+//    能到达的格子应该明显变多(同一个位置对比,避免两套规则各摆一个局面互相不可比)。
+var openBoard = Board()
+openBoard.apply(Move(from: Hex(col: 1, row: 13), to: Hex(col: 0, row: 12), path: [], isJump: false))
+let fromOpen = Hex(col: 0, row: 12)
+let standardMoves = MoveGenerator.availableMoves(for: fromOpen, on: openBoard, jumpRule: .standard)
+let emptyJumpMoves = MoveGenerator.availableMoves(for: fromOpen, on: openBoard, jumpRule: .allowEmpty)
+assertTrue(standardMoves.allSatisfy { !$0.isJump }, "棋盘中心是空的,标准规则下不该有跳跃(没子可跳)")
+assertTrue(emptyJumpMoves.contains { $0.isJump }, "空格跳规则下,隔着空格也应该能跳")
+assertTrue(
+    Set(emptyJumpMoves.map(\.to)).count > Set(standardMoves.map(\.to)).count,
+    "空格跳规则应该比标准规则能到达更多格子"
+)
+
+// 5. AI 不崩溃、不卡死,自对弈打满 60 步验证收敛(避免死循环/性能炸)
 var game = Board()
 var turn = Team.bottom
 var stepCount = 0
@@ -43,7 +57,7 @@ let maxSteps = 60
 let start = Date()
 while stepCount < maxSteps {
     if game.isWon(by: .top) || game.isWon(by: .bottom) { break }
-    let moves = MoveGenerator.allMoves(for: turn, on: game)
+    let moves = MoveGenerator.allMoves(for: turn, on: game, jumpRule: .standard)
     guard !moves.isEmpty else {
         print("⚠️ \(turn) 无子可走(不应发生,棋子不会被吃)")
         break
@@ -52,7 +66,7 @@ while stepCount < maxSteps {
     let sem = DispatchSemaphore(value: 0)
     var chosen: Move?
     Task {
-        chosen = await CheckersAI.bestMove(for: turn, on: game, difficulty: .medium)
+        chosen = await CheckersAI.bestMove(for: turn, on: game, difficulty: .medium, jumpRule: .standard)
         sem.signal()
     }
     sem.wait()

@@ -23,9 +23,15 @@ open CheckersKids.xcodeproj
   叠一层左上角径向渐变高光做出光泽感,不用贴图——之前试过开源宝石贴图,颜色是"就近凑"的近似色,
   贴图自带的大理石纹理在小尺寸下也显脏,不如纯色饱和干净。
 - AI:minimax + alpha-beta,按"棋子到目标区的行进度"打分,分简单/中等/困难三档(对应搜索深度 1/2/3)。轮到 AI 时先"想"半秒再落子,不是秒下。
-- 首页选玩法 + 难度:点"人机对战"先展开难度三选一(简单/中等/困难)+"开始对战",难度开局前定好,
-  对局中不能再改(`GameEngine.aiDifficulty` 是 `let`,不是 `@Published var`)。点"双人对战"直接进,
-  不涉及难度。`GameMode` 决定 `GameEngine` 是否会在切换到对方回合时自动请求 AI 走子。
+- 跳跃规则:`JumpRule` 两档——`standard`(不空格跳,标准规则,必须隔着棋子才能跳)、`allowEmpty`
+  (空格跳,隔着空格也能跳)。两种规则下跳跃都能连续链式跳,`MoveGenerator.explore()` 里只是把
+  "中间格必须有棋子"这个 guard 换成可选,`CheckersAI` 的 minimax 也按同一个 `jumpRule` 算棋,不然
+  AI 会用玩家选不到的跳法。
+- 首页选玩法 + 设置:点"人机对战"/"双人对战"都会先进"对局设置"步骤——人机对战额外多一个难度
+  三选一(简单/中等/困难),双人对战没有难度但两种模式都能设跳跃规则,`@AppStorage` 记住上次选的
+  规则跨次启动保留。难度/规则开局前定好,对局中不能再改(`GameEngine.aiDifficulty`/`jumpRule` 都是
+  `let`,不是 `@Published var`)。`GameMode` 决定 `GameEngine` 是否会在切换到对方回合时自动请求 AI
+  走子。
 - 棋盘皮肤:首页底部"皮肤"入口,`BoardSkin` 枚举配色全部取自知名开源配色方案(色值本身不受版权
   保护),而非自己调的 RGB——摩卡糖果([Catppuccin](https://catppuccin.com))、北欧极光
   ([Nord](https://www.nordtheme.com))、德古拉([Dracula](https://draculatheme.com))、复古暗调
@@ -48,7 +54,7 @@ open CheckersKids.xcodeproj
 ```
 Sources/
   App/         App 入口
-  Models/      棋盘几何、走子规则、对局状态(GameMode/GameEngine)、BoardSkin、Haptics
+  Models/      棋盘几何、走子规则(JumpRule)、对局状态(GameMode/GameEngine)、BoardSkin、Haptics
   AI/          minimax AI
   Views/       HomeView(选模式+难度+皮肤入口)/ GameView(对局)/ BoardView(棋盘渲染+动画)/
                SkinPickerView(选皮肤)/ DecorativeBoardPreview(首页装饰棋盘)/ Styles(PressableButtonStyle)
@@ -71,7 +77,8 @@ xcodebuild -project CheckersKids.xcodeproj -scheme CheckersKids \
 
 ```bash
 swiftc Sources/Models/Hex.swift Sources/Models/Board.swift Sources/Models/Move.swift \
-  Sources/AI/CheckersAI.swift scripts/main.swift -o /tmp/checkerskids_smoketest
+  Sources/Models/JumpRule.swift Sources/AI/CheckersAI.swift scripts/main.swift \
+  -o /tmp/checkerskids_smoketest
 /tmp/checkerskids_smoketest
 ```
 
