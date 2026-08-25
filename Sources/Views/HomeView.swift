@@ -89,12 +89,11 @@ struct HomeView: View {
 
     @ViewBuilder
     private func settingsStep(for mode: GameMode) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 26) {
             if mode == .vsAI {
                 settingsGroup(title: "难度") {
                     ForEach(AIDifficulty.allCases, id: \.rawValue) { level in
-                        optionRow(title: level.label, isSelected: difficulty == level) {
-                            Haptics.select()
+                        choiceChip(title: level.label, isSelected: difficulty == level) {
                             difficulty = level
                         }
                         .accessibilityIdentifier("difficulty_\(level.rawValue)")
@@ -102,10 +101,9 @@ struct HomeView: View {
                 }
             }
 
-            settingsGroup(title: "跳跃规则") {
+            settingsGroup(title: "跳跃规则", hint: jumpRule.subtitle) {
                 ForEach(JumpRule.allCases) { rule in
-                    optionRow(title: rule.label, subtitle: rule.subtitle, isSelected: jumpRule == rule) {
-                        Haptics.select()
+                    choiceChip(title: rule.label, isSelected: jumpRule == rule) {
                         jumpRule = rule
                     }
                     .accessibilityIdentifier("jumpRule_\(rule.rawValue)")
@@ -137,41 +135,47 @@ struct HomeView: View {
         }
     }
 
-    private func settingsGroup<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+    /// 一组"圆形单选图标 + 下方文字"横排的选项(难度/跳跃规则用同一套样式,不用铺满宽度的大色块列表)。
+    private func settingsGroup<Content: View>(
+        title: String, hint: String? = nil, @ViewBuilder content: () -> Content
+    ) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.5))
-            VStack(spacing: 12) { content() }
+            HStack(spacing: 22) {
+                content()
+                Spacer(minLength: 0)
+            }
+            if let hint {
+                Text(hint)
+                    .font(.system(size: 13, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
         }
     }
 
-    private func optionRow(
-        title: String, subtitle: String? = nil, isSelected: Bool, action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    if let subtitle {
-                        Text(subtitle)
-                            .font(.system(size: 13, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.65))
+    private func choiceChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            Haptics.select()
+            action()
+        } label: {
+            VStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? Color.orange : Color.white.opacity(0.1))
+                        .overlay(Circle().stroke(isSelected ? Color.orange : Color.white.opacity(0.3), lineWidth: 1.5))
+                        .frame(width: 48, height: 48)
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(.white)
                     }
                 }
-                Spacer()
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                }
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(isSelected ? .white : .white.opacity(0.55))
             }
-            .foregroundStyle(.white)
-            .padding(.vertical, 14)
-            .padding(.horizontal, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? Color.orange.opacity(0.85) : Color.white.opacity(0.1))
-            )
         }
         .buttonStyle(PressableButtonStyle())
     }

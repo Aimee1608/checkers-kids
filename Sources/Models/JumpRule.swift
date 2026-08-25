@@ -11,8 +11,8 @@ enum JumpRule: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .standard: return "不空格跳"
-        case .allowEmpty: return "空格跳"
+        case .standard: return "单跳"
+        case .allowEmpty: return "空跳"
         }
     }
 

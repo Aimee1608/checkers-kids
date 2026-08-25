@@ -34,7 +34,9 @@ open CheckersKids.xcodeproj
   三选一(简单/中等/困难),双人对战没有难度但两种模式都能设跳跃规则,`@AppStorage` 记住上次选的
   规则跨次启动保留。难度/规则开局前定好,对局中不能再改(`GameEngine.aiDifficulty`/`jumpRule` 都是
   `let`,不是 `@Published var`)。`GameMode` 决定 `GameEngine` 是否会在切换到对方回合时自动请求 AI
-  走子。
+  走子。难度/跳跃规则的选择器是"圆形单选图标+下方文字"横排(参考了竞品截图的交互样式),不是铺满
+  宽度的大色块列表;跳跃规则选中哪项,组标题下面会跟着换一行说明文字。`JumpRule.label` 现在叫
+  "单跳"/"空跳"(不再叫"不空格跳"/"空格跳",跟主流跳棋平台的叫法对齐)。
 - 棋盘皮肤:首页底部"皮肤"入口,`BoardSkin` 枚举配色全部取自知名开源配色方案(色值本身不受版权
   保护),而非自己调的 RGB——摩卡糖果([Catppuccin](https://catppuccin.com))、北欧极光
   ([Nord](https://www.nordtheme.com))、德古拉([Dracula](https://draculatheme.com))、复古暗调
