@@ -3,7 +3,7 @@ import SwiftUI
 struct BoardView: View {
     @ObservedObject var engine: GameEngine
     let maxWidth: CGFloat
-    var skin: BoardSkin = .classic
+    var skin: BoardSkin = .catppuccinMocha
 
     var body: some View {
         let spacing = calcSpacing(maxWidth: maxWidth)

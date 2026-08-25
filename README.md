@@ -24,9 +24,12 @@ open CheckersKids.xcodeproj
 - 首页选玩法 + 难度:点"人机对战"先展开难度三选一(简单/中等/困难)+"开始对战",难度开局前定好,
   对局中不能再改(`GameEngine.aiDifficulty` 是 `let`,不是 `@Published var`)。点"双人对战"直接进,
   不涉及难度。`GameMode` 决定 `GameEngine` 是否会在切换到对方回合时自动请求 AI 走子。
-- 棋盘皮肤:首页底部"皮肤"入口,`BoardSkin` 枚举定义配色(深绿/浅木/果冻/钻石/星球/炫彩共6套),
-  用 `@AppStorage` 记住选择,跨次启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,
-  不重复维护配色。
+- 棋盘皮肤:首页底部"皮肤"入口,`BoardSkin` 枚举配色全部取自知名开源配色方案(色值本身不受版权
+  保护),而非自己调的 RGB——摩卡糖果([Catppuccin](https://catppuccin.com))、北欧极光
+  ([Nord](https://www.nordtheme.com))、德古拉([Dracula](https://draculatheme.com))、复古暗调
+  ([Solarized Dark](https://ethanschoonover.com/solarized))、东京夜色
+  ([Tokyo Night](https://github.com/folke/tokyonight.nvim))共5套。`@AppStorage` 记住选择,跨次
+  启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,不重复维护配色。
 - 棋子走动有动画:连跳会按 `Move.path` 逐格"跳"给玩家看,不是瞬移到终点;单步/单跳一次平滑滑动。棋子用稳定 id(`Piece`)+ SwiftUI 视图身份来做位移动画,不是靠格子重绘。
 - 对局页头部有步数计数(`GameEngine.moveCount`,双方合计,每次 `perform` +1,重开清零)。
 - 玩家执下方(橙色)先手,电脑/对方执上方(绿色)。棋盘宽度随屏幕自适应,适配 iPad。

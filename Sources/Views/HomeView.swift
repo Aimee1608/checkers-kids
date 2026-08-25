@@ -188,5 +188,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(skin: .constant(.classic), onStart: { _, _ in })
+    HomeView(skin: .constant(.catppuccinMocha), onStart: { _, _ in })
 }

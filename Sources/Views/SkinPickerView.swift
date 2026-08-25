@@ -84,5 +84,5 @@ struct SkinPickerView: View {
 }
 
 #Preview {
-    SkinPickerView(selected: .constant(.classic))
+    SkinPickerView(selected: .constant(.catppuccinMocha))
 }

@@ -2,11 +2,11 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var session: (mode: GameMode, difficulty: AIDifficulty)?
-    @AppStorage("boardSkin") private var skinRaw = BoardSkin.classic.rawValue
+    @AppStorage("boardSkin") private var skinRaw = BoardSkin.catppuccinMocha.rawValue
 
     private var skin: Binding<BoardSkin> {
         Binding(
-            get: { BoardSkin(rawValue: skinRaw) ?? .classic },
+            get: { BoardSkin(rawValue: skinRaw) ?? .catppuccinMocha },
             set: { skinRaw = $0.rawValue }
         )
     }

@@ -164,9 +164,9 @@ final class GameFlowUITests: XCTestCase {
         app.launch()
 
         app.buttons["openSkinPicker"].tap()
-        let lightSkin = app.buttons["skin_light"]
-        XCTAssertTrue(lightSkin.waitForExistence(timeout: 3), "皮肤页应该有浅木选项")
-        lightSkin.tap()
+        let nordSkin = app.buttons["skin_nord"]
+        XCTAssertTrue(nordSkin.waitForExistence(timeout: 3), "皮肤页应该有北欧极光选项")
+        nordSkin.tap()
 
         app.buttons["skinPickerDone"].tap()
         XCTAssertTrue(app.buttons["mode_vsAI"].waitForExistence(timeout: 3), "关闭皮肤页应该回到首页")

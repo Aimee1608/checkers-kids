@@ -176,5 +176,5 @@ extension AIDifficulty {
 }
 
 #Preview {
-    GameView(mode: .vsAI, aiDifficulty: .medium, skin: .classic, onExit: {})
+    GameView(mode: .vsAI, aiDifficulty: .medium, skin: .catppuccinMocha, onExit: {})
 }
