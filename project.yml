@@ -16,12 +16,22 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: "AppIcon"
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: "3LM3J9NPCR"
+        CODE_SIGN_STYLE: Automatic
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
         INFOPLIST_KEY_CFBundleDisplayName: "跳跳棋"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: "NO"
+      configs:
+        # 自动签名(CODE_SIGN_STYLE=Automatic)下 CODE_SIGN_IDENTITY 只能是
+        # "Apple Development",不能手动指定成 Apple Distribution——那是
+        # -exportArchive 导出那一步才切换的身份,archive 这步本身固定用开发身份编译,
+        # 手动指定发行身份反而会报 "conflicting provisioning settings"。
+        Debug:
+          CODE_SIGN_IDENTITY: "Apple Development"
+        Release:
+          CODE_SIGN_IDENTITY: "Apple Development"
   CheckersKidsUITests:
     type: bundle.ui-testing
     platform: iOS
