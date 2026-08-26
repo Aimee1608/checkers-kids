@@ -23,6 +23,11 @@ targets:
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         SUPPORTS_MACCATALYST: "NO"
+        # iPad 分屏/多任务强制要求声明全部 4 个方向,不声明的话 App Store 上传直接被拒
+        # ("No orientations were specified")。GENERATE_INFOPLIST_FILE 的自动生成机制不认
+        # "KEY~ipad" 这种带 idiom 后缀的自定义写法(试过,编译出来的 Info.plist 里这个 key
+        # 直接不存在),所以 iPhone/iPad 不区分,统一开 4 个方向,不用跟这个工具限制较劲。
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
       configs:
         # 自动签名(CODE_SIGN_STYLE=Automatic)下 CODE_SIGN_IDENTITY 只能是
         # "Apple Development",不能手动指定成 Apple Distribution——那是
