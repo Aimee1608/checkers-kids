@@ -1,6 +1,6 @@
 import AVFoundation
 
-/// 背景音乐和音效都是代码里合成的波形,不用找外部音频素材、不用考虑版权,完全离线。
+/// 背景音乐是打包进 app 的真实曲子(CC0 授权,不涉及版权),音效是代码里现场合成的正弦波。
 /// 两个开关各自独立存 @AppStorage,首页和对局页共用同一份状态。
 @MainActor
 final class SoundManager: ObservableObject {
@@ -20,8 +20,8 @@ final class SoundManager: ObservableObject {
     private let engine = AVAudioEngine()
     private let bgmPlayer = AVAudioPlayerNode()
     private let sfxPlayer = AVAudioPlayerNode()
-    private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
-    private let bgmBuffer: AVAudioPCMBuffer
+    private let sfxFormat = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+    private let bgmBuffer: AVAudioPCMBuffer?
     private var engineStarted = false
 
     private init() {
@@ -32,12 +32,14 @@ final class SoundManager: ObservableObject {
             ? true
             : UserDefaults.standard.bool(forKey: "sfxEnabled")
 
-        bgmBuffer = SoundManager.makeMelodyBuffer(format: format)
+        bgmBuffer = SoundManager.loadBGMBuffer()
 
         engine.attach(bgmPlayer)
         engine.attach(sfxPlayer)
-        engine.connect(bgmPlayer, to: engine.mainMixerNode, format: format)
-        engine.connect(sfxPlayer, to: engine.mainMixerNode, format: format)
+        if let bgmBuffer {
+            engine.connect(bgmPlayer, to: engine.mainMixerNode, format: bgmBuffer.format)
+        }
+        engine.connect(sfxPlayer, to: engine.mainMixerNode, format: sfxFormat)
 
         if musicEnabled { startBGM() }
     }
@@ -62,7 +64,7 @@ final class SoundManager: ObservableObject {
     }
 
     private func startBGM() {
-        guard ensureEngineRunning() else { return }
+        guard let bgmBuffer, ensureEngineRunning() else { return }
         bgmPlayer.scheduleBuffer(bgmBuffer, at: nil, options: .loops)
         bgmPlayer.play()
     }
@@ -87,59 +89,20 @@ final class SoundManager: ObservableObject {
         }
     }
 
-    /// 五声音阶(C 大调 do/re/mi/sol/la)但时值错落成一个摇篮曲式的呼吸感,不是整齐划一的
-    /// 考试铃声;音符之间留了重叠(legato),靠"下一个音符还没等上一个完全淡出就进来"
-    /// 听起来才连贯。另外垫一条极轻的低音持续音打底,给旋律一个和声基础,不然纯旋律裸奏
-    /// 会显得单薄。
-    private static func makeMelodyBuffer(format: AVAudioFormat) -> AVAudioPCMBuffer {
-        struct Note { let freq: Double; let duration: Double }
-        let notes: [Note] = [
-            Note(freq: 261.63, duration: 0.9),
-            Note(freq: 329.63, duration: 0.55),
-            Note(freq: 392.00, duration: 0.55),
-            Note(freq: 440.00, duration: 0.9),
-            Note(freq: 392.00, duration: 0.55),
-            Note(freq: 329.63, duration: 0.55),
-            Note(freq: 293.66, duration: 0.9),
-            Note(freq: 261.63, duration: 1.3),
-        ]
-        let overlap = 0.82 // 下一个音符在这个比例处就开始,跟上一个音符的尾音叠在一起。
-
-        var onsets: [Double] = []
-        var t = 0.0
-        for note in notes {
-            onsets.append(t)
-            t += note.duration * overlap
+    /// 背景音乐是 CC0 授权的真实曲子(Children's March Theme, by Cleyton Kauffman,
+    /// opengameart.org,无缝循环设计),自己合成的旋律太生硬,换成真人谱写的更好听。
+    /// 打包成 96kbps AAC 减小体积,启动时一次性读进内存循环播,不用每次都读文件。
+    private static func loadBGMBuffer() -> AVAudioPCMBuffer? {
+        guard let url = Bundle.main.url(forResource: "BackgroundMusic", withExtension: "m4a"),
+              let file = try? AVAudioFile(forReading: url),
+              let buffer = AVAudioPCMBuffer(pcmFormat: file.processingFormat, frameCapacity: AVAudioFrameCount(file.length))
+        else { return nil }
+        do {
+            try file.read(into: buffer)
+            return buffer
+        } catch {
+            return nil
         }
-        let totalDuration = onsets.last! + notes.last!.duration
-        let totalFrames = AVAudioFrameCount(format.sampleRate * totalDuration) + 1
-        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: totalFrames)!
-        buffer.frameLength = totalFrames
-        let channel = buffer.floatChannelData![0]
-
-        let droneFreq = 130.81 // 低八度的 C3,持续整个循环,音量很轻,只是垫个底。
-        for frame in 0..<Int(totalFrames) {
-            let time = Double(frame) / format.sampleRate
-            let env = envelope(t: time, duration: totalDuration, attack: 0.6, release: 0.6)
-            channel[frame] = Float(sin(2.0 * .pi * droneFreq * time) * 0.045 * env)
-        }
-
-        for (note, onset) in zip(notes, onsets) {
-            let startFrame = Int(onset * format.sampleRate)
-            let noteFrames = Int(note.duration * format.sampleRate)
-            for frame in 0..<noteFrames {
-                let idx = startFrame + frame
-                guard idx < Int(totalFrames) else { break }
-                let localT = Double(frame) / format.sampleRate
-                let env = envelope(t: localT, duration: note.duration, attack: 0.06, release: note.duration * 0.75)
-                // 极轻的颤音(±0.4%,5.2Hz)让音色暖一点,不是死板的纯音高。
-                let vibrato = 1.0 + 0.004 * sin(2.0 * .pi * 5.2 * localT)
-                let freq = note.freq * vibrato
-                let sample = (sin(2.0 * .pi * freq * localT) + 0.4 * sin(2.0 * .pi * freq * 2 * localT)) / 1.4
-                channel[idx] += Float(sample * env * 0.1)
-            }
-        }
-        return buffer
     }
 
     private static func makeTone(frequency: Double, duration: Double, amplitude: Double) -> AVAudioPCMBuffer {

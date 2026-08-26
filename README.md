@@ -43,11 +43,13 @@ open CheckersKids.xcodeproj
   ([Solarized Dark](https://ethanschoonover.com/solarized))、东京夜色
   ([Tokyo Night](https://github.com/folke/tokyonight.nvim))共5套。`@AppStorage` 记住选择,跨次
   启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,不重复维护配色。
-- 音效:`SoundManager` 用 `AVAudioEngine` 现场合成波形,不用外部音频素材——背景音乐是五声音阶
-  (C 大调 do/re/mi/sol/la)但音符时值错落成摇篮曲式的呼吸感,不是整齐划一的考试铃声;音符之间
-  留了 legato 重叠(下一个音符在上一个还没完全淡出时就进来),垫一条极轻的低音持续音打底给旋律
-  一个和声基础,再加极轻颤音让音色暖一点——纯旋律裸奏、节奏又统一容易显得像铃声,这几样是针对性
-  改的。选子/移动/获胜各是一段短促的合成音。背景音乐、音效是两个独立开关(`musicEnabled`/
+- 音效:背景音乐和操作音效是两条不同的路子。背景音乐自己合成的旋律听起来太生硬(纯旋律裸奏、
+  节奏又整齐划一,像考试铃声),换成真人谱写的曲子——[Children's March Theme]
+  (https://opengameart.org/content/childrens-march-theme),作者 Cleyton Kauffman,CC0 授权,
+  无缝循环设计,本来就是给"puzzle/casual/childish"类游戏用的,跟我们的场景刚好对上。原始 WAV
+  转成 96kbps AAC(`Sources/Resources/BackgroundMusic.m4a`,约 760KB)打包进 app,启动时一次性
+  读进内存循环播。操作音效(选子/移动/获胜)还是 `SoundManager` 用 `AVAudioEngine` 现场合成的
+  正弦波短音,这块效果本来就没问题,没换。背景音乐、音效是两个独立开关(`musicEnabled`/
   `sfxEnabled`,各自 `@AppStorage` 持久化),首页和对局页头部的"声音"按钮点开同一个
   `SoundSettingsView` 面板去分别设置,不是绑在一起的总开关。引擎启动失败(比如没有音频设备)会
   静默放弃,不影响正常对局。
