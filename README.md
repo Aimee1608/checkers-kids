@@ -43,11 +43,14 @@ open CheckersKids.xcodeproj
   ([Solarized Dark](https://ethanschoonover.com/solarized))、东京夜色
   ([Tokyo Night](https://github.com/folke/tokyonight.nvim))共5套。`@AppStorage` 记住选择,跨次
   启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,不重复维护配色。
-- 音效:`SoundManager` 用 `AVAudioEngine` 现场合成正弦波,不用外部音频素材——背景音乐是五声音阶
-  (C 大调 do/re/mi/sol/la)绕一圈循环,顺序怎么排都不会有半音冲突,不用真的谱曲;选子/移动/获胜
-  各是一段短促的合成音。开关状态 `@AppStorage` 持久化,首页和对局页头部各有一个"声音"按钮,两处
-  共享同一个 `SoundManager.shared`,一边关另一边也跟着变。引擎启动失败(比如没有音频设备)会静默
-  放弃,不影响正常对局。
+- 音效:`SoundManager` 用 `AVAudioEngine` 现场合成波形,不用外部音频素材——背景音乐是五声音阶
+  (C 大调 do/re/mi/sol/la)但音符时值错落成摇篮曲式的呼吸感,不是整齐划一的考试铃声;音符之间
+  留了 legato 重叠(下一个音符在上一个还没完全淡出时就进来),垫一条极轻的低音持续音打底给旋律
+  一个和声基础,再加极轻颤音让音色暖一点——纯旋律裸奏、节奏又统一容易显得像铃声,这几样是针对性
+  改的。选子/移动/获胜各是一段短促的合成音。背景音乐、音效是两个独立开关(`musicEnabled`/
+  `sfxEnabled`,各自 `@AppStorage` 持久化),首页和对局页头部的"声音"按钮点开同一个
+  `SoundSettingsView` 面板去分别设置,不是绑在一起的总开关。引擎启动失败(比如没有音频设备)会
+  静默放弃,不影响正常对局。
 - 棋子走动有动画:连跳会按 `Move.path` 逐格"跳"给玩家看,不是瞬移到终点;单步/单跳一次平滑滑动。棋子用稳定 id(`Piece`)+ SwiftUI 视图身份来做位移动画,不是靠格子重绘。
 - 对局页头部有步数计数(`GameEngine.moveCount`,双方合计,每次 `perform` +1,重开清零)。
 - 玩家执下方(橙色)先手,电脑/对方执上方(绿色)。棋盘宽度随屏幕自适应,适配 iPad。
@@ -68,7 +71,8 @@ Sources/
                Haptics、SoundManager(合成音效)
   AI/          minimax AI
   Views/       HomeView(选模式+难度+皮肤入口)/ GameView(对局)/ BoardView(棋盘渲染+动画)/
-               SkinPickerView(选皮肤)/ DecorativeBoardPreview(首页装饰棋盘)/ Styles(PressableButtonStyle)
+               SkinPickerView(选皮肤)/ SoundSettingsView(背景音乐/音效开关)/
+               DecorativeBoardPreview(首页装饰棋盘)/ Styles(PressableButtonStyle)
 scripts/
   main.swift   核心规则冒烟测试(棋盘几何/连跳/AI自对弈),不依赖 Xcode 工程
 UITests/

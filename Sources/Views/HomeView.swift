@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var step: Step = .chooseMode
     @State private var difficulty: AIDifficulty = .medium
     @State private var showingSkinPicker = false
+    @State private var showingSoundSettings = false
     @ObservedObject private var sound = SoundManager.shared
 
     var body: some View {
@@ -58,6 +59,9 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showingSkinPicker) {
             SkinPickerView(selected: $skin)
+        }
+        .sheet(isPresented: $showingSoundSettings) {
+            SoundSettingsView()
         }
     }
 
@@ -184,10 +188,10 @@ struct HomeView: View {
     private var utilityRow: some View {
         HStack(spacing: 36) {
             Button {
-                sound.toggle()
+                showingSoundSettings = true
             } label: {
                 VStack(spacing: 6) {
-                    Image(systemName: sound.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                    Image(systemName: (sound.musicEnabled || sound.sfxEnabled) ? "speaker.wave.2.fill" : "speaker.slash.fill")
                         .font(.system(size: 22))
                     Text("声音")
                         .font(.system(size: 13, design: .rounded))
@@ -195,8 +199,7 @@ struct HomeView: View {
                 .foregroundStyle(.white.opacity(0.7))
             }
             .buttonStyle(PressableButtonStyle())
-            .accessibilityIdentifier("toggleSound")
-            .accessibilityLabel(sound.isEnabled ? "声音已开启" : "声音已关闭")
+            .accessibilityIdentifier("openSoundSettings")
 
             Button {
                 showingSkinPicker = true

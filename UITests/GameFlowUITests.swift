@@ -174,26 +174,41 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5), "选完空格跳规则后应该能正常进对局")
     }
 
-    /// 声音开关首页和对局页都要有(不是只有一处能关),状态是同一个开关、共享的——
-    /// 首页关掉之后进对局,对局页里的图标也应该显示"已关闭"。
-    func testSoundToggleExistsOnHomeAndInGame() throws {
+    /// 背景音乐和音效是两个独立开关(不是绑在一起的一个总开关),首页和对局页都能打开
+    /// 这个设置面板,状态是共享的——首页关掉背景音乐之后进对局,面板里应该还是关的。
+    func testSoundSettingsHaveIndependentMusicAndSFXToggles() throws {
         let app = XCUIApplication()
         app.launch()
 
-        let homeToggle = app.buttons["toggleSound"]
-        XCTAssertTrue(homeToggle.waitForExistence(timeout: 3), "首页应该有声音开关")
-        let wasOn = homeToggle.label == "声音已开启"
-        homeToggle.tap()
-        let expectedLabel = wasOn ? "声音已关闭" : "声音已开启"
-        XCTAssertEqual(homeToggle.label, expectedLabel, "点一下开关,首页图标状态应该跟着变")
+        XCTAssertTrue(app.buttons["openSoundSettings"].waitForExistence(timeout: 3), "首页应该有声音设置入口")
+        app.buttons["openSoundSettings"].tap()
 
+        let musicToggle = app.switches["musicToggle"]
+        let sfxToggle = app.switches["sfxToggle"]
+        XCTAssertTrue(musicToggle.waitForExistence(timeout: 3), "设置面板应该有背景音乐开关")
+        XCTAssertTrue(sfxToggle.exists, "设置面板应该有音效开关")
+
+        let musicWasOn = musicToggle.value as? String == "1"
+        musicToggle.tap()
+        XCTAssertNotEqual(
+            musicToggle.value as? String, musicWasOn ? "1" : "0",
+            "点一下背景音乐开关,状态应该翻转"
+        )
+        XCTAssertEqual(sfxToggle.value as? String, "1", "只关背景音乐不该连带把音效也关掉,两个开关应该互不影响")
+
+        app.buttons["soundSettingsDone"].tap()
         app.buttons["mode_local"].tap()
         app.buttons["startLocal"].tap()
         XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
 
-        let gameToggle = app.buttons["toggleSound"]
-        XCTAssertTrue(gameToggle.waitForExistence(timeout: 3), "对局页也应该有声音开关")
-        XCTAssertEqual(gameToggle.label, expectedLabel, "对局页应该看到跟首页一样的开关状态,是同一个设置")
+        XCTAssertTrue(app.buttons["openSoundSettings"].waitForExistence(timeout: 3), "对局页也应该有声音设置入口")
+        app.buttons["openSoundSettings"].tap()
+        let musicToggleInGame = app.switches["musicToggle"]
+        XCTAssertTrue(musicToggleInGame.waitForExistence(timeout: 3))
+        XCTAssertEqual(
+            musicToggleInGame.value as? String, musicWasOn ? "0" : "1",
+            "对局页看到的背景音乐开关状态应该跟首页刚才关的一致,是同一份设置"
+        )
     }
 
     /// 首页"皮肤"入口能打开选择页、切换后棋盘颜色确实变了(用棋盘背板的截图对比太脆弱,
