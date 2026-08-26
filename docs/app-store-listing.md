@@ -93,5 +93,7 @@ https://aimee1608.github.io/checkers-kids/privacy-policy
 
 ## 分类
 
-- 主要分类:游戏 → 棋盘游戏(Board)
-- 次要分类:游戏 → 益智解谜(Puzzle)
+主类别选「游戏」,然后两个子类别:
+
+- 主要子类别:**桌面游戏**(Board,在下拉列表最底下)
+- 次要子类别:**益智解谜游戏**(Puzzle)
