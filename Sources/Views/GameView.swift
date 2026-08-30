@@ -36,8 +36,10 @@ struct GameView: View {
                         .padding(.top, 12)
 
                     ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                        BoardView(engine: engine, maxWidth: geo.size.width - 40, skin: skin)
-                            .padding(20)
+                        // 边距压到最小:手机上棋盘越大越好点,层层 padding 叠起来会把
+                        // 棋子挤得很小(量过一次只铺满屏宽 78%)。
+                        BoardView(engine: engine, maxWidth: geo.size.width - 16, skin: skin)
+                            .padding(8)
                             .frame(maxWidth: .infinity)
                     }
                 }

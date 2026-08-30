@@ -17,9 +17,9 @@ final class GameFlowUITests: XCTestCase {
         return app
     }
 
-    /// 圆盘直径要精确匹配可用宽度,不能超出屏幕——之前算间距的公式是按老的矩形棋盘
-    /// 抄的,没跟着"圆盘要盖住六个尖角"改,导致圆盘右边被裁到屏幕外面。
-    func testDiscBoardStaysWithinScreenBounds() throws {
+    /// 棋盘宽度要精确匹配可用宽度,不能超出屏幕——算间距的公式手推近似过一次就错过
+    /// (棋盘右边被裁到屏幕外),所以这条一直留着守着。
+    func testBoardStaysWithinScreenBounds() throws {
         let app = launchIntoGame(mode: "mode_local")
         XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
 
@@ -30,6 +30,20 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(leftPeg.frame.minX, 0, "六角星最左边的格子不该被裁到屏幕外")
         XCTAssertLessThanOrEqual(
             rightPeg.frame.maxX, screenWidth, "六角星最右边的格子不该被裁到屏幕外"
+        )
+    }
+
+    /// 棋盘容器换成六边形就是为了把外接圆白占的横向空间省出来给棋子——所以横向要真的
+    /// 铺满可用宽度(留一点内边距),不能改完形状棋子还是那么小。
+    func testBoardFillsAvailableWidth() throws {
+        let app = launchIntoGame(mode: "mode_local")
+        XCTAssertTrue(app.buttons["peg_0_8"].waitForExistence(timeout: 5))
+
+        let screenWidth = app.windows.firstMatch.frame.width
+        let spanned = app.buttons["peg_12_4"].frame.maxX - app.buttons["peg_-12_4"].frame.minX
+        XCTAssertGreaterThan(
+            spanned, screenWidth * 0.88,
+            "六角星最左到最右应该基本铺满屏幕宽度,占比过低说明又退回了外接圆那种浪费"
         )
     }
 
