@@ -63,9 +63,9 @@ open CheckersKids.xcodeproj
 - `.alert`/`confirmationDialog` 这类系统弹窗调制符**必须分别挂在各自的触发按钮上**,不能都挂在
   外层容器视图——挂一起会出现"点了没反应""XCUITest 找按钮时报 multiple matching elements"这类
   疑难杂症(这条踩了两次,一次 confirmationDialog 一次 alert,同一个坑)。
-- 按钮有按压态反馈(缩小+变暗)、选子/落子/获胜有触觉反馈。首页↔对局的转场只做淡入淡出,不用
-  `.move(edge:)` 那种左右滑推——两个页面没有层级关系(不是 push/pop),横向滑动会暗示"前进/后退",
-  实际用起来别扭。
+- 按钮有按压态反馈(缩小+变暗)、选子/落子/获胜有触觉反馈。首页↔对局**不加任何转场**,直接瞬切——两个页面没有
+  层级关系(不是 push/pop),`.move(edge:)` 的横向滑推会暗示"前进/后退",淡入淡出也仍有等待感。
+  注意 `if let session` 会把同名 `@State` 遮蔽成 let 常量,闭包里改状态得写 `self.session`。
 
 ## 目录结构
 
