@@ -26,20 +26,16 @@ struct ContentView: View {
                     mode: session.mode, aiDifficulty: session.difficulty, jumpRule: session.jumpRule,
                     skin: skin.wrappedValue
                 ) {
-                    withAnimation(.easeInOut(duration: 0.3)) { self.session = nil }
+                    withAnimation(.easeInOut(duration: 0.2)) { self.session = nil }
                 }
-                .transition(
-                    .asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading))
-                    .combined(with: .opacity)
-                )
+                // 只做淡入淡出,不用 .move(edge:) 那种左右滑推——首页和对局页没有层级
+                // 关系(不是 push/pop),横向滑动会暗示"往前进/往后退",反而别扭。
+                .transition(.opacity)
             } else {
                 HomeView(skin: skin, jumpRule: jumpRule) { mode, difficulty, rule in
-                    withAnimation(.easeInOut(duration: 0.3)) { self.session = (mode, difficulty, rule) }
+                    withAnimation(.easeInOut(duration: 0.2)) { self.session = (mode, difficulty, rule) }
                 }
-                .transition(
-                    .asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .trailing))
-                    .combined(with: .opacity)
-                )
+                .transition(.opacity)
             }
         }
     }
