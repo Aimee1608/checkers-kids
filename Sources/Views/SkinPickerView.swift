@@ -1,10 +1,15 @@
 import SwiftUI
 
+/// sheet 的背景交给 `.presentationBackground` 设,不要在里面自己铺一层不透明色顶到边:
+/// iOS 会给 sheet 边缘画一条浅色描边,自铺的深色背景压在它下面会把亮度差拉到 3 倍
+/// (量过:圆角上的像素亮度 48~84,而背景 23、弹框 29),沿弯曲的角渲染成一串明暗不均的
+/// 亮点,看起来就是"毛刺"。
 struct SkinPickerView: View {
     @Binding var selected: BoardSkin
     @Environment(\.dismiss) private var dismiss
 
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    private let background = Color(red: 0.08, green: 0.12, blue: 0.18)
 
     var body: some View {
         NavigationStack {
@@ -16,10 +21,9 @@ struct SkinPickerView: View {
                 }
                 .padding(20)
             }
-            .background(Color(red: 0.08, green: 0.12, blue: 0.18).ignoresSafeArea())
             .navigationTitle("皮肤")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color(red: 0.08, green: 0.12, blue: 0.18), for: .navigationBar)
+            .toolbarBackground(background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -29,6 +33,7 @@ struct SkinPickerView: View {
                 }
             }
         }
+        .modifier(SheetBackground(color: background))
     }
 
     private func skinCard(_ skin: BoardSkin) -> some View {
@@ -88,6 +93,20 @@ struct SkinPickerView: View {
             .overlay(Circle().stroke(Color.white.opacity(0.35), lineWidth: 1))
             .frame(width: 26, height: 26)
             .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+    }
+}
+
+/// `presentationBackground` 要 iOS 16.4,部署目标是 16.0,所以包一层可用性判断;
+/// 老系统上退回原来的样子(边缘毛刺,但不影响功能)。
+private struct SheetBackground: ViewModifier {
+    let color: Color
+
+    func body(content: Content) -> some View {
+        if #available(iOS 16.4, *) {
+            content.presentationBackground(color)
+        } else {
+            content.background(color.ignoresSafeArea())
+        }
     }
 }
 

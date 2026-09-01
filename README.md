@@ -44,6 +44,10 @@ open CheckersKids.xcodeproj
   ([Solarized Dark](https://ethanschoonover.com/solarized))、东京夜色
   ([Tokyo Night](https://github.com/folke/tokyonight.nvim))共5套。`@AppStorage` 记住选择,跨次
   启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,不重复维护配色。
+  皮肤页是 `.sheet`,背景必须用 `.presentationBackground` 设,**不能**在 sheet 里面自己铺一层
+  不透明色顶到边:iOS 会给 sheet 边缘画一条浅色描边,自铺背景压在它下面会把亮度差拉到 3 倍
+  (量过:圆角上的像素亮度 48~84,而背景 23、弹框 29),沿弯曲的角渲染成一串明暗不均的亮点,
+  肉眼看就是"毛刺"。`presentationBackground` 要 iOS 16.4,部署目标是 16.0,所以包了层可用性判断。
 - 音效:背景音乐和操作音效是两条不同的路子。背景音乐自己合成的旋律听起来太生硬(纯旋律裸奏、
   节奏又整齐划一,像考试铃声),换成真人谱写的曲子——[Children's March Theme]
   (https://opengameart.org/content/childrens-march-theme),作者 Cleyton Kauffman,CC0 授权,
