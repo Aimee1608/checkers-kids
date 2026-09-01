@@ -62,15 +62,10 @@ struct GameView: View {
     private var header: some View {
         VStack(spacing: 4) {
             HStack {
-                Button { showExitConfirm = true } label: {
-                    Image(systemName: "house.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 44, height: 44)
+                CircleIconButton(icon: "icon_home", label: "退出对局") {
+                    showExitConfirm = true
                 }
-                .buttonStyle(PressableButtonStyle())
                 .accessibilityIdentifier("backToHome")
-                .accessibilityLabel("退出对局")
                 .alert("退出这一局?", isPresented: $showExitConfirm) {
                     Button("取消", role: .cancel) {}
                     Button("退出", role: .destructive, action: onExit)
@@ -81,25 +76,20 @@ struct GameView: View {
 
                 Spacer()
 
-                Button { showingSoundSettings = true } label: {
-                    Image(systemName: (sound.musicEnabled || sound.sfxEnabled) ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 44, height: 44)
+                CircleIconButton(
+                    icon: (sound.musicEnabled || sound.sfxEnabled) ? "icon_sound_on" : "icon_sound_off",
+                    label: "声音设置"
+                ) {
+                    showingSoundSettings = true
                 }
-                .buttonStyle(PressableButtonStyle())
                 .accessibilityIdentifier("openSoundSettings")
-                .accessibilityLabel("声音设置")
 
-                Button { showRestartConfirm = true } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 44, height: 44)
+                Spacer().frame(width: 10)
+
+                CircleIconButton(icon: "icon_restart", label: "重开对局") {
+                    showRestartConfirm = true
                 }
-                .buttonStyle(PressableButtonStyle())
                 .accessibilityIdentifier("restartGame")
-                .accessibilityLabel("重开对局")
                 .alert("重新开始这一局?", isPresented: $showRestartConfirm) {
                     Button("取消", role: .cancel) {}
                     Button("重新开始", role: .destructive) { engine.reset() }

@@ -189,32 +189,17 @@ struct HomeView: View {
 
     private var utilityRow: some View {
         HStack(spacing: 36) {
-            Button {
+            CircleIconLabelButton(
+                icon: (sound.musicEnabled || sound.sfxEnabled) ? "icon_sound_on" : "icon_sound_off",
+                title: "声音"
+            ) {
                 showingSoundSettings = true
-            } label: {
-                VStack(spacing: 6) {
-                    Image(systemName: (sound.musicEnabled || sound.sfxEnabled) ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                        .font(.system(size: 22))
-                    Text("声音")
-                        .font(.system(size: 13, design: .rounded))
-                }
-                .foregroundStyle(.white.opacity(0.7))
             }
-            .buttonStyle(PressableButtonStyle())
             .accessibilityIdentifier("openSoundSettings")
 
-            Button {
+            CircleIconLabelButton(icon: "icon_palette", title: "皮肤") {
                 showingSkinPicker = true
-            } label: {
-                VStack(spacing: 6) {
-                    Image(systemName: "paintpalette.fill")
-                        .font(.system(size: 22))
-                    Text("皮肤")
-                        .font(.system(size: 13, design: .rounded))
-                }
-                .foregroundStyle(.white.opacity(0.7))
             }
-            .buttonStyle(PressableButtonStyle())
             .accessibilityIdentifier("openSkinPicker")
         }
     }

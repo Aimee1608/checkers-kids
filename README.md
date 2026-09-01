@@ -73,6 +73,12 @@ open CheckersKids.xcodeproj
 - `.alert`/`confirmationDialog` 这类系统弹窗调制符**必须分别挂在各自的触发按钮上**,不能都挂在
   外层容器视图——挂一起会出现"点了没反应""XCUITest 找按钮时报 multiple matching elements"这类
   疑难杂症(这条踩了两次,一次 confirmationDialog 一次 alert,同一个坑)。
+- 图标用 [Lucide](https://lucide.dev)(ISC 授权)的 SVG,放在 `Assets.xcassets` 里设成 template
+  渲染模式,SwiftUI 侧用 `Image(name).renderingMode(.template)` 上色,不引第三方库。原生 SwiftUI
+  没有 Web 那种可换主题的组件库(iOS 控件是系统给的),但图标集和按钮容器样式可以照搬 Web 做法。
+  注意 SVG 里的 `stroke="currentColor"` 在 iOS 上不解析,得换成实色(模板渲染只取 alpha 通道)。
+- 所有图标按钮统一是「图标 + 半透明圆底」(`CircleIconButton` / `CircleIconLabelButton`):裸图标
+  看不出哪里能点,小朋友容易乱戳,圆底把可点范围画出来了。
 - 按钮有按压态反馈(缩小+变暗)、选子/落子/获胜有触觉反馈。首页↔对局**不加任何转场**,直接瞬切——两个页面没有
   层级关系(不是 push/pop),`.move(edge:)` 的横向滑推会暗示"前进/后退",淡入淡出也仍有等待感。
   注意 `if let session` 会把同名 `@State` 遮蔽成 let 常量,闭包里改状态得写 `self.session`。
