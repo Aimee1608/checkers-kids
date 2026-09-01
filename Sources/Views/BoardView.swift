@@ -4,14 +4,34 @@ import SwiftUI
 /// 上下尖、左右扁,用外接圆罩它会白白多出 15% 的宽度(圆得画到能容下上下尖角
 /// 的直径,横向就撑得过宽了),换成这个六边形宽度直接收窄到内容本身的跨度。
 struct BoardHexagon: Shape {
+    /// 圆角退让距离占外接圆半径的比例。六边形边长恰好等于外接圆半径,所以这个值
+    /// 不能超过 0.5(否则两个角的退让点会在同一条边上交叉)。
+    var cornerRatio: CGFloat = 0.15
+
     func path(in rect: CGRect) -> Path {
         let c = CGPoint(x: rect.midX, y: rect.midY)
         let r = rect.height / 2
+        let verts = (0..<6).map { i -> CGPoint in
+            let a = Angle(degrees: Double(i) * 60 - 90).radians
+            return CGPoint(x: c.x + r * cos(a), y: c.y + r * sin(a))
+        }
+        let inset = min(r * cornerRatio, r * 0.5)
+
+        func retreat(from v: CGPoint, toward t: CGPoint) -> CGPoint {
+            let dx = t.x - v.x, dy = t.y - v.y
+            let len = max(hypot(dx, dy), 0.0001)
+            return CGPoint(x: v.x + dx / len * inset, y: v.y + dy / len * inset)
+        }
+
         var p = Path()
         for i in 0..<6 {
-            let angle = Angle(degrees: Double(i) * 60 - 90).radians
-            let v = CGPoint(x: c.x + r * cos(angle), y: c.y + r * sin(angle))
-            i == 0 ? p.move(to: v) : p.addLine(to: v)
+            let curr = verts[i]
+            let a = retreat(from: curr, toward: verts[(i + 5) % 6])
+            let b = retreat(from: curr, toward: verts[(i + 1) % 6])
+            i == 0 ? p.move(to: a) : p.addLine(to: a)
+            // 用顶点当控制点的二次贝塞尔当圆角,不用真正的圆弧——视觉上分辨不出来,
+            // 但省掉了算切点和圆心的一堆三角函数。
+            p.addQuadCurve(to: b, control: curr)
         }
         p.closeSubpath()
         return p
@@ -93,7 +113,9 @@ struct BoardView: View {
     /// 六个尖角旋转对称,到中心距离本来就相等,这个距离就是六边形的外接圆半径。
     private func hexRadius(points: [CGPoint], center: CGPoint, pegSize: CGFloat) -> CGFloat {
         let maxDist = points.map { hypot($0.x - center.x, $0.y - center.y) }.max() ?? 0
-        return maxDist + pegSize * 0.75
+        // 0.85 不是随手定的:圆角把顶点处的边界往内收了 cornerRatio/4 个半径,margin 取
+        // 0.75 配 0.15 圆角时尖角棋子离边界只剩 0.036 个格距,视觉上就贴边了。
+        return maxDist + pegSize * 0.85
     }
 
     /// 顶点朝上的正六边形:高 = 2r(顶点到顶点),宽 = √3·r(边到边)。
