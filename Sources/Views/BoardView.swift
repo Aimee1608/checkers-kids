@@ -1,11 +1,35 @@
 import SwiftUI
 
+/// 把任意多边形画成圆角版本。用顶点当控制点的二次贝塞尔当圆角,不用真正的圆弧——
+/// 视觉上分辨不出来,但省掉了算切点和圆心的一堆三角函数。
+func roundedPolygonPath(_ verts: [CGPoint], inset: CGFloat) -> Path {
+    let n = verts.count
+    guard n >= 3 else { return Path() }
+
+    func retreat(from v: CGPoint, toward t: CGPoint) -> CGPoint {
+        let dx = t.x - v.x, dy = t.y - v.y
+        let len = max(hypot(dx, dy), 0.0001)
+        // 退让不能超过半条边,否则相邻两个角的退让点会在同一条边上交叉。
+        let d = min(inset, len * 0.5)
+        return CGPoint(x: v.x + dx / len * d, y: v.y + dy / len * d)
+    }
+
+    var p = Path()
+    for i in 0..<n {
+        let curr = verts[i]
+        let a = retreat(from: curr, toward: verts[(i + n - 1) % n])
+        let b = retreat(from: curr, toward: verts[(i + 1) % n])
+        i == 0 ? p.move(to: a) : p.addLine(to: a)
+        p.addQuadCurve(to: b, control: curr)
+    }
+    p.closeSubpath()
+    return p
+}
+
 /// 顶点朝上的正六边形,六个顶点正好落在六角星的六个尖角上——六角星本身就是
 /// 上下尖、左右扁,用外接圆罩它会白白多出 15% 的宽度(圆得画到能容下上下尖角
 /// 的直径,横向就撑得过宽了),换成这个六边形宽度直接收窄到内容本身的跨度。
 struct BoardHexagon: Shape {
-    /// 圆角退让距离占外接圆半径的比例。六边形边长恰好等于外接圆半径,所以这个值
-    /// 不能超过 0.5(否则两个角的退让点会在同一条边上交叉)。
     var cornerRatio: CGFloat = 0.15
 
     func path(in rect: CGRect) -> Path {
@@ -15,26 +39,7 @@ struct BoardHexagon: Shape {
             let a = Angle(degrees: Double(i) * 60 - 90).radians
             return CGPoint(x: c.x + r * cos(a), y: c.y + r * sin(a))
         }
-        let inset = min(r * cornerRatio, r * 0.5)
-
-        func retreat(from v: CGPoint, toward t: CGPoint) -> CGPoint {
-            let dx = t.x - v.x, dy = t.y - v.y
-            let len = max(hypot(dx, dy), 0.0001)
-            return CGPoint(x: v.x + dx / len * inset, y: v.y + dy / len * inset)
-        }
-
-        var p = Path()
-        for i in 0..<6 {
-            let curr = verts[i]
-            let a = retreat(from: curr, toward: verts[(i + 5) % 6])
-            let b = retreat(from: curr, toward: verts[(i + 1) % 6])
-            i == 0 ? p.move(to: a) : p.addLine(to: a)
-            // 用顶点当控制点的二次贝塞尔当圆角,不用真正的圆弧——视觉上分辨不出来,
-            // 但省掉了算切点和圆心的一堆三角函数。
-            p.addQuadCurve(to: b, control: curr)
-        }
-        p.closeSubpath()
-        return p
+        return roundedPolygonPath(verts, inset: r * cornerRatio)
     }
 }
 
@@ -69,6 +74,12 @@ struct BoardView: View {
                 .frame(width: size.width, height: size.height)
                 .shadow(color: .black.opacity(0.35), radius: 10, y: 4)
 
+            // 起始区染色:实体跳棋盘的惯例是六个尖角各染一色、中间留白。我们是两人局,
+            // 只用上下两个角,所以只染这两块——另外四个角是装饰区,染了反而会让人以为
+            // 那也能走。用该套皮肤自己的棋子色,不额外引入配色。
+            homeZone(for: .top, spacing: spacing, center: center, size: size, pegSize: pegSize)
+            homeZone(for: .bottom, spacing: spacing, center: center, size: size, pegSize: pegSize)
+
             // 格子层:固定位置,负责点击和空格/落点提示,不随棋子移动。
             ForEach(sortedCells, id: \.self) { hex in
                 let p = point(for: hex, spacing: spacing)
@@ -95,6 +106,41 @@ struct BoardView: View {
 
     private var sortedCells: [Hex] {
         engine.board.cells.sorted { $0.row == $1.row ? $0.col < $1.col : $0.row < $1.row }
+    }
+
+    /// 尖角是三角形排布:只有一格的那行是尖顶,格子最多的那行是底边。取这三个角
+    /// 当三角形顶点,朝外撑开半个格子多一点,让染色区把整排棋子都罩进去。
+    @ViewBuilder
+    private func homeZone(
+        for team: Team, spacing: CGFloat, center: CGPoint, size: CGSize, pegSize: CGFloat
+    ) -> some View {
+        let cells = BoardLayout.startCells(for: team)
+        let byRow = Dictionary(grouping: cells, by: \.row)
+
+        if let apexRow = byRow.first(where: { $0.value.count == 1 })?.key,
+           let baseRow = byRow.max(by: { $0.value.count < $1.value.count })?.key,
+           let apex = byRow[apexRow]?.first,
+           let base = byRow[baseRow]?.sorted(by: { $0.col < $1.col }),
+           let left = base.first, let right = base.last {
+
+            let raw = [apex, left, right].map { point(for: $0, spacing: spacing) }
+            let mid = CGPoint(
+                x: raw.map(\.x).reduce(0, +) / 3,
+                y: raw.map(\.y).reduce(0, +) / 3
+            )
+            let expanded = raw.map { p -> CGPoint in
+                let dx = p.x - mid.x, dy = p.y - mid.y
+                let len = max(hypot(dx, dy), 0.0001)
+                let out = pegSize * 0.95
+                return CGPoint(
+                    x: p.x + dx / len * out - center.x + size.width / 2,
+                    y: p.y + dy / len * out - center.y + size.height / 2
+                )
+            }
+            let color = team == .top ? skin.topPieceColor : skin.bottomPieceColor
+            roundedPolygonPath(expanded, inset: pegSize * 0.55)
+                .fill(color.opacity(0.16))
+        }
     }
 
     private func point(for hex: Hex, spacing: CGFloat) -> CGPoint {
