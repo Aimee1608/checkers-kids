@@ -60,8 +60,10 @@ struct HomeView: View {
         .sheet(isPresented: $showingSkinPicker) {
             SkinPickerView(selected: $skin)
         }
-        .sheet(isPresented: $showingSoundSettings) {
-            SoundSettingsView()
+        .overlay {
+            if showingSoundSettings {
+                SoundSettingsView { showingSoundSettings = false }
+            }
         }
     }
 

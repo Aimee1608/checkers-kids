@@ -52,7 +52,9 @@ open CheckersKids.xcodeproj
   读进内存循环播。操作音效(选子/移动/获胜)还是 `SoundManager` 用 `AVAudioEngine` 现场合成的
   正弦波短音,这块效果本来就没问题,没换。背景音乐、音效是两个独立开关(`musicEnabled`/
   `sfxEnabled`,各自 `@AppStorage` 持久化),首页和对局页头部的"声音"按钮点开同一个
-  `SoundSettingsView` 面板去分别设置,不是绑在一起的总开关。引擎启动失败(比如没有音频设备)会
+  `SoundSettingsView` 去分别设置,不是绑在一起的总开关。这个面板是**自绘的居中弹框**(压暗背景
+  + 居中卡片 + 点遮罩关闭),不是 `.sheet`——`.sheet` 在 iPhone 上会渲染成底部上拉的半截卡片,
+  跟 app 里其它弹窗(退出/重开的 alert、获胜面板)的居中风格对不上。引擎启动失败(比如没有音频设备)会
   静默放弃,不影响正常对局。
 - 棋子走动有动画:连跳会按 `Move.path` 逐格"跳"给玩家看,不是瞬移到终点;单步/单跳一次平滑滑动。棋子用稳定 id(`Piece`)+ SwiftUI 视图身份来做位移动画,不是靠格子重绘。
 - 对局页头部有步数计数(`GameEngine.moveCount`,双方合计,每次 `perform` +1,重开清零)。

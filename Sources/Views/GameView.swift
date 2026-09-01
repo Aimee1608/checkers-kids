@@ -52,6 +52,11 @@ struct GameView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.75), value: engine.winner)
+        .overlay {
+            if showingSoundSettings {
+                SoundSettingsView { showingSoundSettings = false }
+            }
+        }
     }
 
     private var header: some View {
@@ -85,9 +90,6 @@ struct GameView: View {
                 .buttonStyle(PressableButtonStyle())
                 .accessibilityIdentifier("openSoundSettings")
                 .accessibilityLabel("声音设置")
-                .sheet(isPresented: $showingSoundSettings) {
-                    SoundSettingsView()
-                }
 
                 Button { showRestartConfirm = true } label: {
                     Image(systemName: "arrow.clockwise")
