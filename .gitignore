@@ -2,3 +2,6 @@ CheckersKids.xcodeproj/
 DerivedData/
 xcuserdata/
 .DS_Store
+
+# 私有的开发环境速查(含本机路径/账号/隧道),不进公开仓库
+CLAUDE.md

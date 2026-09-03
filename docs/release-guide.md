@@ -8,7 +8,6 @@
 
 | 项目 | 值 / 位置 |
 |---|---|
-| Apple Team ID | `3LM3J9NPCR`(已写进 `project.yml`) |
 | Bundle ID | `com.aimee.checkerskids` |
 | App Store 名称 | 彩虹跳跳棋 |
 | 隐私政策 URL | https://aimee1608.github.io/checkers-kids/privacy-policy |
@@ -24,37 +23,26 @@
 
 ## 二、日常开发闭环
 
-代码以 **Linux 开发机** `my-code/checkers-kids` 为准,Mac 上
-`Documents/web-infra-others/my-code-dev/checkers-kids` 是调试工作区。
+改完代码后:重新生成工程 → 跑测试 → 装模拟器验证。
 
 ```bash
-# 1. 改完代码同步到 Mac
-scp -P 2222 <改动的文件> bytedance@127.0.0.1:<Mac对应路径>
-
-# 2. Mac 上重新生成工程并跑测试
-ssh -p 2222 bytedance@127.0.0.1 "cd <Mac项目路径> && \
-  /opt/homebrew/bin/xcodegen generate && \
-  xcodebuild -project CheckersKids.xcodeproj -scheme CheckersKids \
-    -destination 'id=<模拟器UDID>' test"
-
-# 3. 装到模拟器看效果
-ssh -p 2222 bytedance@127.0.0.1 "xcrun simctl install <UDID> <.app路径> && \
-  xcrun simctl launch <UDID> com.aimee.checkerskids"
+xcodegen generate      # 改过 project.yml 就必须重跑
+xcodebuild -project CheckersKids.xcodeproj -scheme CheckersKids \
+  -destination 'id=<模拟器UDID>' test
 ```
 
-改 `project.yml` 后必须重跑 `xcodegen generate`。
+跑 `xcrun simctl list devices` 拿模拟器 UDID。
 
-### Mac 上的 git 同步
-
-Mac 没配 GitHub 的 SSH key,`git fetch` 会失败。用 bundle 传:
+核心逻辑(棋盘几何/走子规则/AI)可以不开 Xcode 工程直接编译跑:
 
 ```bash
-git bundle create /tmp/sync.bundle <上次同步的commit>..main
-scp -P 2222 /tmp/sync.bundle bytedance@127.0.0.1:/tmp/sync.bundle
-ssh -p 2222 bytedance@127.0.0.1 "cd <Mac项目路径> && \
-  git fetch /tmp/sync.bundle main:refs/tmp && git reset --hard refs/tmp && \
-  git branch -d refs/tmp; rm -f /tmp/sync.bundle"
+swiftc Sources/Models/Hex.swift Sources/Models/Board.swift Sources/Models/Move.swift \
+  Sources/Models/JumpRule.swift Sources/AI/CheckersAI.swift scripts/main.swift \
+  -o /tmp/smoketest && /tmp/smoketest
 ```
+
+> 含顶层代码的文件必须叫 `main.swift` 并用 `swiftc` 编译成可执行文件,
+> 别用 `swift a.swift b.swift` 解释器模式(多文件下行为不可靠)。
 
 ---
 
@@ -74,7 +62,6 @@ CURRENT_PROJECT_VERSION: "4"    # build 号,只增不减,不能跟已上传过�
 ### 2. 打包 + 上传
 
 ```bash
-cd /Users/bytedance/Documents/web-infra-others/my-code-dev/checkers-kids && \
 xcodebuild -project CheckersKids.xcodeproj -scheme CheckersKids \
   -destination 'generic/platform=iOS' -allowProvisioningUpdates \
   -archivePath /tmp/CheckersKids.xcarchive archive
