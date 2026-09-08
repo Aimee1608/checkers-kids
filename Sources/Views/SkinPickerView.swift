@@ -14,10 +14,22 @@ struct SkinPickerView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    DecorativeBoardPreview(appearance: appearance, spacing: 9)
+                VStack(alignment: .leading, spacing: 20) {
+                    DecorativeBoardPreview(appearance: appearance, spacing: 8)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
+
+                    section("经典搭配") {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(SkinPreset.allCases) { preset in
+                                    presetCard(preset)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+                        .padding(.horizontal, -20)
+                    }
 
                     section("棋盘") {
                         LazyVGrid(columns: skinColumns, spacing: 8) {
@@ -66,6 +78,49 @@ struct SkinPickerView: View {
                     .foregroundStyle(.white.opacity(0.4))
             }
         }
+    }
+
+    private func presetCard(_ preset: SkinPreset) -> some View {
+        let isSelected = preset.matches(appearance)
+        let a = preset.appearance
+        return Button {
+            Haptics.select()
+            appearance = a
+        } label: {
+            VStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(LinearGradient(colors: a.skin.boardBackground, startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 64, height: 40)
+                    .overlay(
+                        HStack(spacing: 6) {
+                            gem(a.top.color)
+                            gem(a.bottom.color)
+                        }
+                    )
+                Text(preset.name)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(isSelected ? 1 : 0.7))
+            }
+            .padding(6)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(isSelected ? 0.16 : 0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(isSelected ? Color.green : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(PressableButtonStyle())
+        .accessibilityIdentifier("preset_\(preset.rawValue)")
+    }
+
+    private func gem(_ color: Color) -> some View {
+        Circle()
+            .fill(color)
+            .overlay(Circle().stroke(.white.opacity(0.4), lineWidth: 1))
+            .shadow(color: .black.opacity(0.3), radius: 1, y: 1)
+            .frame(width: 18, height: 18)
     }
 
     private func skinCard(_ skin: BoardSkin) -> some View {

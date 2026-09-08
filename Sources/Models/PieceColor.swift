@@ -57,3 +57,40 @@ struct Appearance: Equatable {
     func color(for team: Team) -> Color { piece(for: team).color }
     func piece(for team: Team) -> PieceColor { team == .top ? top : bottom }
 }
+
+enum SkinPreset: String, CaseIterable, Identifiable {
+    case classic, candy, deepSea, cream, sakura, night, mint, dracula
+
+    var id: String { rawValue }
+
+    var name: String {
+        switch self {
+        case .classic: return "经典"
+        case .candy: return "糖果"
+        case .deepSea: return "深海"
+        case .cream: return "奶油"
+        case .sakura: return "樱花"
+        case .night: return "夜色"
+        case .mint: return "薄荷"
+        case .dracula: return "暗夜"
+        }
+    }
+
+    var appearance: Appearance {
+        switch self {
+        case .classic: return Appearance(skin: .wood, topChoice: .blue, bottomChoice: .red)
+        case .candy: return Appearance(skin: .catppuccinMocha, topChoice: .green, bottomChoice: .orange)
+        case .deepSea: return Appearance(skin: .ocean, topChoice: .yellow, bottomChoice: .pink)
+        case .cream: return Appearance(skin: .cream, topChoice: .blue, bottomChoice: .red)
+        case .sakura: return Appearance(skin: .sakura, topChoice: .purple, bottomChoice: .teal)
+        case .night: return Appearance(skin: .tokyoNight, topChoice: .green, bottomChoice: .red)
+        case .mint: return Appearance(skin: .mint, topChoice: .orange, bottomChoice: .purple)
+        case .dracula: return Appearance(skin: .dracula, topChoice: .green, bottomChoice: .pink)
+        }
+    }
+
+    func matches(_ a: Appearance) -> Bool {
+        let p = appearance
+        return a.skin == p.skin && a.top == p.top && a.bottom == p.bottom
+    }
+}

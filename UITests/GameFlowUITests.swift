@@ -273,4 +273,32 @@ final class GameFlowUITests: XCTestCase {
         app.buttons["pieceBottom_orange"].tap()
         app.buttons["skinPickerDone"].tap()
     }
+
+    /// 经典搭配一键把棋盘和双方棋子色一起换掉;结尾同样要复位。
+    func testPresetSetsBoardAndBothPieceColorsAtOnce() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["openSkinPicker"].tap()
+        let classic = app.buttons["preset_classic"]
+        XCTAssertTrue(classic.waitForExistence(timeout: 3), "皮肤页应该有经典搭配")
+        classic.tap()
+        app.buttons["skinPickerDone"].tap()
+
+        app.buttons["mode_local"].tap()
+        let start = app.buttons["startLocal"]
+        XCTAssertTrue(start.waitForExistence(timeout: 3))
+        start.tap()
+        XCTAssertTrue(app.staticTexts["轮到红色"].waitForExistence(timeout: 3), "经典搭配下方是红色,先走")
+
+        app.buttons["backToHome"].tap()
+        let confirmExit = app.buttons.matching(identifier: "confirmExit").firstMatch
+        XCTAssertTrue(confirmExit.waitForExistence(timeout: 3))
+        confirmExit.tap()
+        XCTAssertTrue(app.buttons["openSkinPicker"].waitForExistence(timeout: 5))
+        app.buttons["openSkinPicker"].tap()
+        XCTAssertTrue(app.buttons["preset_candy"].waitForExistence(timeout: 3))
+        app.buttons["preset_candy"].tap()
+        app.buttons["skinPickerDone"].tap()
+    }
 }
