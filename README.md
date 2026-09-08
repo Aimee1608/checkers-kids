@@ -50,7 +50,8 @@ open CheckersKids.xcodeproj
 - 皮肤:首页底部"皮肤"入口,一个页面里选三样——棋盘底色、上方棋子色、下方棋子色,顶部有一个
   跟着实时变的迷你棋盘预览(`DecorativeBoardPreview`,首页顶部那个也是它)。预览下面一排
   "经典搭配"(`SkinPreset`,8 套)一键把三样一起换掉,给不想逐项挑的人用;当前三项恰好等于某套
-  搭配时那张卡片高亮。
+  搭配时那张卡片高亮。搭配按 7 岁男孩的兴趣点命名(太空/赛车/恐龙/足球/深海/英雄/忍者/海盗),
+  不按颜色名;人机模式孩子执下方,每套的下方棋子放该主题里最"主角"的颜色。
   棋盘底色 `BoardSkin` 共 11 套,色值全部取自知名开源配色方案(色值本身不受版权保护),而非自己调
   的 RGB——摩卡糖果([Catppuccin](https://catppuccin.com))、北欧极光([Nord](https://www.nordtheme.com))、
   德古拉([Dracula](https://draculatheme.com))、复古暗调([Solarized Dark](https://ethanschoonover.com/solarized))、

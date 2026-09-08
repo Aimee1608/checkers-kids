@@ -58,34 +58,36 @@ struct Appearance: Equatable {
     func piece(for team: Team) -> PieceColor { team == .top ? top : bottom }
 }
 
+/// 主题按 7 岁男孩的兴趣点起(太空/赛车/恐龙…),不按颜色名起;人机模式孩子执下方,
+/// 每套的下方棋子放该主题里最"主角"的颜色。
 enum SkinPreset: String, CaseIterable, Identifiable {
-    case classic, candy, deepSea, cream, sakura, night, mint, dracula
+    case space, racing, dino, football, deepSea, hero, ninja, pirate
 
     var id: String { rawValue }
 
     var name: String {
         switch self {
-        case .classic: return "经典"
-        case .candy: return "糖果"
+        case .space: return "太空"
+        case .racing: return "赛车"
+        case .dino: return "恐龙"
+        case .football: return "足球"
         case .deepSea: return "深海"
-        case .cream: return "奶油"
-        case .sakura: return "樱花"
-        case .night: return "夜色"
-        case .mint: return "薄荷"
-        case .dracula: return "暗夜"
+        case .hero: return "英雄"
+        case .ninja: return "忍者"
+        case .pirate: return "海盗"
         }
     }
 
     var appearance: Appearance {
         switch self {
-        case .classic: return Appearance(skin: .wood, topChoice: .blue, bottomChoice: .red)
-        case .candy: return Appearance(skin: .catppuccinMocha, topChoice: .green, bottomChoice: .orange)
-        case .deepSea: return Appearance(skin: .ocean, topChoice: .yellow, bottomChoice: .pink)
-        case .cream: return Appearance(skin: .cream, topChoice: .blue, bottomChoice: .red)
-        case .sakura: return Appearance(skin: .sakura, topChoice: .purple, bottomChoice: .teal)
-        case .night: return Appearance(skin: .tokyoNight, topChoice: .green, bottomChoice: .red)
-        case .mint: return Appearance(skin: .mint, topChoice: .orange, bottomChoice: .purple)
-        case .dracula: return Appearance(skin: .dracula, topChoice: .green, bottomChoice: .pink)
+        case .space: return Appearance(skin: .tokyoNight, topChoice: .teal, bottomChoice: .yellow)
+        case .racing: return Appearance(skin: .dracula, topChoice: .blue, bottomChoice: .red)
+        case .dino: return Appearance(skin: .wood, topChoice: .orange, bottomChoice: .green)
+        case .football: return Appearance(skin: .forest, topChoice: .red, bottomChoice: .blue)
+        case .deepSea: return Appearance(skin: .ocean, topChoice: .green, bottomChoice: .yellow)
+        case .hero: return Appearance(skin: .catppuccinMocha, topChoice: .blue, bottomChoice: .red)
+        case .ninja: return Appearance(skin: .nord, topChoice: .teal, bottomChoice: .red)
+        case .pirate: return Appearance(skin: .cream, topChoice: .red, bottomChoice: .blue)
         }
     }
 

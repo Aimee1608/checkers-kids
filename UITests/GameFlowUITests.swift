@@ -144,6 +144,7 @@ final class GameFlowUITests: XCTestCase {
     func testRestartAsksConfirmationThenResetsBoard() throws {
         let app = launchIntoGame(mode: "mode_vsAI")
 
+        XCTAssertTrue(app.buttons["peg_1_13"].waitForExistence(timeout: 5))
         app.buttons["peg_1_13"].tap()
         app.buttons["peg_0_12"].tap()
         XCTAssertTrue(app.staticTexts["轮到你了"].waitForExistence(timeout: 15), "AI 应手完成,轮回玩家")
@@ -280,16 +281,16 @@ final class GameFlowUITests: XCTestCase {
         app.launch()
 
         app.buttons["openSkinPicker"].tap()
-        let classic = app.buttons["preset_classic"]
-        XCTAssertTrue(classic.waitForExistence(timeout: 3), "皮肤页应该有经典搭配")
-        classic.tap()
+        let racing = app.buttons["preset_racing"]
+        XCTAssertTrue(racing.waitForExistence(timeout: 3), "皮肤页应该有经典搭配")
+        racing.tap()
         app.buttons["skinPickerDone"].tap()
 
         app.buttons["mode_local"].tap()
         let start = app.buttons["startLocal"]
         XCTAssertTrue(start.waitForExistence(timeout: 3))
         start.tap()
-        XCTAssertTrue(app.staticTexts["轮到红色"].waitForExistence(timeout: 3), "经典搭配下方是红色,先走")
+        XCTAssertTrue(app.staticTexts["轮到红色"].waitForExistence(timeout: 3), "赛车搭配下方是红色,先走")
 
         app.buttons["backToHome"].tap()
         let confirmExit = app.buttons.matching(identifier: "confirmExit").firstMatch
@@ -297,8 +298,10 @@ final class GameFlowUITests: XCTestCase {
         confirmExit.tap()
         XCTAssertTrue(app.buttons["openSkinPicker"].waitForExistence(timeout: 5))
         app.buttons["openSkinPicker"].tap()
-        XCTAssertTrue(app.buttons["preset_candy"].waitForExistence(timeout: 3))
-        app.buttons["preset_candy"].tap()
+        XCTAssertTrue(app.buttons["skin_catppuccinMocha"].waitForExistence(timeout: 3))
+        app.buttons["skin_catppuccinMocha"].tap()
+        app.buttons["pieceTop_green"].tap()
+        app.buttons["pieceBottom_orange"].tap()
         app.buttons["skinPickerDone"].tap()
     }
 }
