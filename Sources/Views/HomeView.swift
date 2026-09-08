@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
-    @Binding var skin: BoardSkin
+    @Binding var appearance: Appearance
     @Binding var jumpRule: JumpRule
     let onStart: (GameMode, AIDifficulty, JumpRule) -> Void
 
@@ -31,7 +31,7 @@ struct HomeView: View {
             VStack(spacing: 32) {
                 Spacer()
 
-                DecorativeBoardPreview()
+                DecorativeBoardPreview(appearance: appearance)
 
                 VStack(spacing: 8) {
                     Text("跳跳棋")
@@ -58,7 +58,7 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $showingSkinPicker) {
-            SkinPickerView(selected: $skin)
+            SkinPickerView(appearance: $appearance)
         }
         .overlay {
             if showingSoundSettings {
@@ -244,5 +244,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(skin: .constant(.catppuccinMocha), jumpRule: .constant(.standard), onStart: { _, _, _ in })
+    HomeView(appearance: .constant(Appearance(skin: .catppuccinMocha)), jumpRule: .constant(.standard), onStart: { _, _, _ in })
 }

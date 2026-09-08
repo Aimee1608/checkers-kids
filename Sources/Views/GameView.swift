@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GameView: View {
     @StateObject private var engine: GameEngine
-    let skin: BoardSkin
+    let appearance: Appearance
     let onExit: () -> Void
     @State private var showExitConfirm = false
     @State private var showRestartConfirm = false
@@ -10,11 +10,11 @@ struct GameView: View {
     @ObservedObject private var sound = SoundManager.shared
 
     init(
-        mode: GameMode, aiDifficulty: AIDifficulty, jumpRule: JumpRule, skin: BoardSkin,
+        mode: GameMode, aiDifficulty: AIDifficulty, jumpRule: JumpRule, appearance: Appearance,
         onExit: @escaping () -> Void
     ) {
         _engine = StateObject(wrappedValue: GameEngine(mode: mode, aiDifficulty: aiDifficulty, jumpRule: jumpRule))
-        self.skin = skin
+        self.appearance = appearance
         self.onExit = onExit
     }
 
@@ -38,7 +38,7 @@ struct GameView: View {
                     ScrollView([.horizontal, .vertical], showsIndicators: false) {
                         // 边距压到最小:手机上棋盘越大越好点,层层 padding 叠起来会把
                         // 棋子挤得很小(量过一次只铺满屏宽 78%)。
-                        BoardView(engine: engine, maxWidth: geo.size.width - 16, skin: skin)
+                        BoardView(engine: engine, maxWidth: geo.size.width - 16, appearance: appearance)
                             .padding(8)
                             .frame(maxWidth: .infinity)
                     }
@@ -101,9 +101,16 @@ struct GameView: View {
             Text("跳跳棋")
                 .font(.system(size: 34, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
-            Text(turnText)
-                .font(.system(size: 16, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.7))
+            HStack(spacing: 6) {
+                if engine.mode == .local {
+                    Circle()
+                        .fill(appearance.color(for: engine.currentTurn))
+                        .frame(width: 12, height: 12)
+                }
+                Text(turnText)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
             Text("第 \(engine.moveCount) 步")
                 .font(.system(size: 13, design: .rounded))
                 .foregroundStyle(.white.opacity(0.45))
@@ -114,7 +121,7 @@ struct GameView: View {
         if engine.mode == .vsAI {
             return engine.currentTurn == engine.humanTeam ? "轮到你了" : "电脑思考中…"
         }
-        return engine.currentTurn == .bottom ? "轮到橙方" : "轮到绿方"
+        return "轮到\(appearance.piece(for: engine.currentTurn).name)"
     }
 
     private func winnerBanner(_ winner: Team) -> some View {
@@ -149,6 +156,16 @@ struct GameView: View {
                 }
                 .buttonStyle(PressableButtonStyle())
                 .padding(.horizontal, 40)
+
+                Button(action: onExit) {
+                    Text("回首页")
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.65))
+                        .padding(.vertical, 6)
+                        .padding(.horizontal, 16)
+                }
+                .buttonStyle(PressableButtonStyle())
+                .accessibilityIdentifier("winnerGoHome")
             }
             .padding(32)
             .background(
@@ -166,7 +183,7 @@ struct GameView: View {
 
     private func winnerTitle(_ winner: Team) -> String {
         if engine.mode == .vsAI { return winner == engine.humanTeam ? "你赢了!" : "电脑赢了" }
-        return winner == .bottom ? "橙方赢了!" : "绿方赢了!"
+        return "\(appearance.piece(for: winner).name)赢了!"
     }
 
     private func winnerSubtitle(_ winner: Team) -> String {
@@ -188,5 +205,5 @@ extension AIDifficulty {
 }
 
 #Preview {
-    GameView(mode: .vsAI, aiDifficulty: .medium, jumpRule: .standard, skin: .catppuccinMocha, onExit: {})
+    GameView(mode: .vsAI, aiDifficulty: .medium, jumpRule: .standard, appearance: Appearance(skin: .catppuccinMocha), onExit: {})
 }

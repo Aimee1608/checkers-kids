@@ -5,6 +5,7 @@ final class GameFlowUITests: XCTestCase {
     /// 双人对战不显示难度,但跳跃规则两种模式都要能设。
     private func launchIntoGame(mode identifier: String) -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-boardSkin", "catppuccinMocha", "-pieceColorTop", "green", "-pieceColorBottom", "orange"]
         app.launch()
         let modeButton = app.buttons[identifier]
         XCTAssertTrue(modeButton.waitForExistence(timeout: 5), "首页应该有 \(identifier) 这个模式按钮")
@@ -113,7 +114,7 @@ final class GameFlowUITests: XCTestCase {
         XCTAssertTrue(destination.waitForExistence(timeout: 5))
         destination.tap()
 
-        let greenTurnLabel = app.staticTexts["轮到绿方"]
+        let greenTurnLabel = app.staticTexts["轮到绿色"]
         XCTAssertTrue(greenTurnLabel.waitForExistence(timeout: 3), "本地对战下 bottom 走完该轮到绿方等人点,不是电脑自动接手")
 
         // 绿方(top)的子也应该能点得动,不是被 disabled。
@@ -238,5 +239,38 @@ final class GameFlowUITests: XCTestCase {
 
         app.buttons["skinPickerDone"].tap()
         XCTAssertTrue(app.buttons["mode_vsAI"].waitForExistence(timeout: 3), "关闭皮肤页应该回到首页")
+    }
+
+    /// 双方棋子颜色在皮肤页单独选;对方已占的颜色不能再选;选好后对局里的回合提示跟着颜色名走。
+    /// 颜色会持久化,所以结尾要把它改回默认搭配,不然会污染其它用例。
+    func testPieceColorsPickedSeparatelyAndCarryIntoGame() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        app.buttons["openSkinPicker"].tap()
+        let topRed = app.buttons["pieceTop_red"]
+        XCTAssertTrue(topRed.waitForExistence(timeout: 3), "皮肤页应该有上方棋子的颜色选项")
+        topRed.tap()
+        app.buttons["pieceBottom_blue"].tap()
+        XCTAssertFalse(app.buttons["pieceBottom_red"].isEnabled, "上方已选红色,下方的红色应该禁用")
+        XCTAssertFalse(app.buttons["pieceTop_blue"].isEnabled, "下方已选蓝色,上方的蓝色应该禁用")
+        app.buttons["skinPickerDone"].tap()
+
+        app.buttons["mode_local"].tap()
+        let start = app.buttons["startLocal"]
+        XCTAssertTrue(start.waitForExistence(timeout: 3))
+        start.tap()
+        XCTAssertTrue(app.staticTexts["轮到蓝色"].waitForExistence(timeout: 3), "下方先走,回合提示应该显示下方选的蓝色")
+
+        app.buttons["backToHome"].tap()
+        let confirmExit = app.buttons.matching(identifier: "confirmExit").firstMatch
+        XCTAssertTrue(confirmExit.waitForExistence(timeout: 3))
+        confirmExit.tap()
+        XCTAssertTrue(app.buttons["openSkinPicker"].waitForExistence(timeout: 5))
+        app.buttons["openSkinPicker"].tap()
+        XCTAssertTrue(app.buttons["pieceTop_green"].waitForExistence(timeout: 3))
+        app.buttons["pieceTop_green"].tap()
+        app.buttons["pieceBottom_orange"].tap()
+        app.buttons["skinPickerDone"].tap()
     }
 }

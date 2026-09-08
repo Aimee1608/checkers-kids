@@ -46,7 +46,9 @@ struct BoardHexagon: Shape {
 struct BoardView: View {
     @ObservedObject var engine: GameEngine
     let maxWidth: CGFloat
-    var skin: BoardSkin = .catppuccinMocha
+    let appearance: Appearance
+
+    private var skin: BoardSkin { appearance.skin }
 
     /// 邻格中心距恰好等于 spacing,所以直径 ≤ spacing 的圆形点击区互不重叠。
     /// 取 0.95 让触摸区几乎铺满格子,小朋友手指点得准。
@@ -137,9 +139,8 @@ struct BoardView: View {
                     y: p.y + dy / len * out - center.y + size.height / 2
                 )
             }
-            let color = team == .top ? skin.topPieceColor : skin.bottomPieceColor
             roundedPolygonPath(expanded, inset: pegSize * 0.55)
-                .fill(color.opacity(0.16))
+                .fill(appearance.color(for: team).opacity(0.16))
         }
     }
 
@@ -202,14 +203,14 @@ struct BoardView: View {
                     .frame(width: pegSize * Self.emptyDotRatio, height: pegSize * Self.emptyDotRatio)
                     .overlay(
                         Circle()
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(skin.emptyCellStroke, lineWidth: 1)
                     )
 
                 if !hasPiece && isDestination {
                     Circle()
-                        .fill(Color.yellow.opacity(0.7))
+                        .fill(skin.highlightColor.opacity(0.75))
                         .frame(width: pegSize * 0.34, height: pegSize * 0.34)
-                        .shadow(color: .yellow.opacity(0.6), radius: 4)
+                        .shadow(color: skin.highlightColor.opacity(0.6), radius: 4)
                 }
             }
             .frame(width: pegSize, height: pegSize)
@@ -224,7 +225,7 @@ struct BoardView: View {
 
     @ViewBuilder
     private func pieceView(for piece: Piece, pegSize: CGFloat, isSelected: Bool) -> some View {
-        let color = piece.team == .top ? skin.topPieceColor : skin.bottomPieceColor
+        let color = appearance.color(for: piece.team)
         let d = pegSize * Self.pieceRatio
 
         ZStack {
@@ -250,9 +251,9 @@ struct BoardView: View {
 
             if isSelected {
                 Circle()
-                    .stroke(Color.yellow, lineWidth: 3)
+                    .stroke(skin.highlightColor, lineWidth: 3)
                     .frame(width: d * 1.12, height: d * 1.12)
-                    .shadow(color: .yellow.opacity(0.7), radius: 5)
+                    .shadow(color: skin.highlightColor.opacity(0.7), radius: 5)
             }
         }
         .frame(width: pegSize, height: pegSize)

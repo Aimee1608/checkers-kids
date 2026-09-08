@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// 首页顶部的装饰性小棋盘:完整六角星轮廓 + 几颗悬浮彩色棋子,纯展示不可交互。
+/// 迷你棋盘:六边形底 + 全部格点 + 双方起始区的棋子,跟当前皮肤实时同步,纯展示不可交互。
+/// 首页和皮肤页共用,只是 spacing 不同。
 struct DecorativeBoardPreview: View {
-    private let spacing: CGFloat = 11
-    private let dotSize: CGFloat = 5
+    let appearance: Appearance
+    var spacing: CGFloat = 11
 
     private var cells: [Hex] {
         BoardLayout.allCells().sorted { $0.row == $1.row ? $0.col < $1.col : $0.row < $1.row }
@@ -13,56 +14,52 @@ struct DecorativeBoardPreview: View {
         CGPoint(x: CGFloat(hex.col) * (spacing / 2), y: CGFloat(hex.row) * (spacing * sqrt(3) / 2))
     }
 
-    private var bounds: (minX: CGFloat, maxX: CGFloat, minY: CGFloat, maxY: CGFloat) {
-        let points = cells.map(point(for:))
-        return (
-            points.map(\.x).min() ?? 0, points.map(\.x).max() ?? 0,
-            points.map(\.y).min() ?? 0, points.map(\.y).max() ?? 0
-        )
-    }
-
-    private let floatingMarbles: [(hex: Hex, color: Color)] = [
-        (Hex(col: 0, row: 6), .orange),
-        (Hex(col: -6, row: 8), .blue),
-        (Hex(col: 6, row: 8), .purple),
-        (Hex(col: -3, row: 11), .pink),
-        (Hex(col: 3, row: 11), .mint),
-    ]
-
     var body: some View {
-        let b = bounds
-        let width = b.maxX - b.minX + dotSize * 2
-        let height = b.maxY - b.minY + dotSize * 2
+        let points = cells.map(point(for:))
+        let minX = points.map(\.x).min() ?? 0, maxX = points.map(\.x).max() ?? 0
+        let minY = points.map(\.y).min() ?? 0, maxY = points.map(\.y).max() ?? 0
+        let center = CGPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
+        let maxDist = points.map { hypot($0.x - center.x, $0.y - center.y) }.max() ?? 0
+        let radius = maxDist + spacing * 0.85
+        let size = CGSize(width: radius * sqrt(3), height: radius * 2)
+        let pieces = BoardLayout.startCells(for: .top).map { ($0, appearance.top.color) }
+            + BoardLayout.startCells(for: .bottom).map { ($0, appearance.bottom.color) }
 
         ZStack {
+            BoardHexagon()
+                .fill(
+                    LinearGradient(
+                        colors: appearance.skin.boardBackground,
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size.width, height: size.height)
+                .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+
             ForEach(cells, id: \.self) { hex in
                 let p = point(for: hex)
                 Circle()
-                    .fill(Color.white.opacity(0.18))
-                    .frame(width: dotSize, height: dotSize)
-                    .position(x: p.x - b.minX + dotSize, y: p.y - b.minY + dotSize)
+                    .fill(appearance.skin.emptyCellColor)
+                    .frame(width: spacing * 0.45, height: spacing * 0.45)
+                    .position(x: p.x - center.x + size.width / 2, y: p.y - center.y + size.height / 2)
             }
-            ForEach(Array(floatingMarbles.enumerated()), id: \.offset) { _, marble in
-                let p = point(for: marble.hex)
+
+            ForEach(pieces, id: \.0) { hex, color in
+                let p = point(for: hex)
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [marble.color.opacity(0.95), marble.color.opacity(0.6)],
-                            center: .topLeading, startRadius: 1, endRadius: 20
-                        )
-                    )
-                    .overlay(Circle().stroke(.white.opacity(0.5), lineWidth: 1))
-                    .shadow(color: marble.color.opacity(0.5), radius: 6, y: 3)
-                    .frame(width: 30, height: 30)
-                    .position(x: p.x - b.minX + dotSize, y: p.y - b.minY + dotSize)
+                    .fill(color)
+                    .overlay(Circle().stroke(.white.opacity(0.35), lineWidth: 0.5))
+                    .shadow(color: .black.opacity(0.3), radius: 1, y: 1)
+                    .frame(width: spacing * 0.8, height: spacing * 0.8)
+                    .position(x: p.x - center.x + size.width / 2, y: p.y - center.y + size.height / 2)
             }
         }
-        .frame(width: width, height: height)
+        .frame(width: size.width, height: size.height)
     }
 }
 
 #Preview {
-    DecorativeBoardPreview()
+    DecorativeBoardPreview(appearance: Appearance(skin: .catppuccinMocha))
         .padding(40)
         .background(Color(red: 0.08, green: 0.12, blue: 0.18))
 }

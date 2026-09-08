@@ -3,12 +3,24 @@ import SwiftUI
 struct ContentView: View {
     @State private var session: (mode: GameMode, difficulty: AIDifficulty, jumpRule: JumpRule)?
     @AppStorage("boardSkin") private var skinRaw = BoardSkin.catppuccinMocha.rawValue
+    @AppStorage("pieceColorTop") private var topRaw = ""
+    @AppStorage("pieceColorBottom") private var bottomRaw = ""
     @AppStorage("jumpRule") private var jumpRuleRaw = JumpRule.standard.rawValue
 
-    private var skin: Binding<BoardSkin> {
+    private var appearance: Binding<Appearance> {
         Binding(
-            get: { BoardSkin(rawValue: skinRaw) ?? .catppuccinMocha },
-            set: { skinRaw = $0.rawValue }
+            get: {
+                Appearance(
+                    skin: BoardSkin(rawValue: skinRaw) ?? .catppuccinMocha,
+                    topChoice: PieceColor(rawValue: topRaw),
+                    bottomChoice: PieceColor(rawValue: bottomRaw)
+                )
+            },
+            set: {
+                skinRaw = $0.skin.rawValue
+                topRaw = $0.topChoice?.rawValue ?? ""
+                bottomRaw = $0.bottomChoice?.rawValue ?? ""
+            }
         )
     }
 
@@ -25,13 +37,13 @@ struct ContentView: View {
         if let session {
             GameView(
                 mode: session.mode, aiDifficulty: session.difficulty, jumpRule: session.jumpRule,
-                skin: skin.wrappedValue
+                appearance: appearance.wrappedValue
             ) {
                 // 得写 self.:`if let session` 把 @State 遮蔽成了同名的 let 常量。
                 self.session = nil
             }
         } else {
-            HomeView(skin: skin, jumpRule: jumpRule) { mode, difficulty, rule in
+            HomeView(appearance: appearance, jumpRule: jumpRule) { mode, difficulty, rule in
                 self.session = (mode, difficulty, rule)
             }
         }

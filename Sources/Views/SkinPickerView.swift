@@ -5,18 +5,34 @@ import SwiftUI
 /// (量过:圆角上的像素亮度 48~84,而背景 23、弹框 29),沿弯曲的角渲染成一串明暗不均的
 /// 亮点,看起来就是"毛刺"。
 struct SkinPickerView: View {
-    @Binding var selected: BoardSkin
+    @Binding var appearance: Appearance
     @Environment(\.dismiss) private var dismiss
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    private let skinColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 4)
     private let background = Color(red: 0.08, green: 0.12, blue: 0.18)
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(BoardSkin.allCases) { skin in
-                        skinCard(skin)
+                VStack(alignment: .leading, spacing: 24) {
+                    DecorativeBoardPreview(appearance: appearance, spacing: 9)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 4)
+
+                    section("棋盘") {
+                        LazyVGrid(columns: skinColumns, spacing: 8) {
+                            ForEach(BoardSkin.allCases) { skin in
+                                skinCard(skin)
+                            }
+                        }
+                    }
+
+                    section("上方棋子", hint: "人机对战时电脑执上方") {
+                        colorRow(for: .top)
+                    }
+
+                    section("下方棋子", hint: "人机对战时你执下方,先走") {
+                        colorRow(for: .bottom)
                     }
                 }
                 .padding(20)
@@ -36,38 +52,52 @@ struct SkinPickerView: View {
         .modifier(SheetBackground(color: background))
     }
 
+    private func section<Content: View>(
+        _ title: String, hint: String? = nil, @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.5))
+            content()
+            if let hint {
+                Text(hint)
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+        }
+    }
+
     private func skinCard(_ skin: BoardSkin) -> some View {
-        let isSelected = selected == skin
+        let isSelected = appearance.skin == skin
         return Button {
             Haptics.select()
-            selected = skin
+            appearance.skin = skin
         } label: {
-            VStack(spacing: 10) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(LinearGradient(colors: skin.boardBackground, startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(height: 90)
-                    HStack(spacing: 8) {
-                        gemPreview(skin.topPieceColor)
-                        gemPreview(skin.bottomPieceColor)
+            VStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(LinearGradient(colors: skin.boardBackground, startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(height: 34)
+                    .overlay(alignment: .topTrailing) {
+                        if isSelected {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white, .green)
+                                .padding(3)
+                        }
                     }
-                }
-                HStack(spacing: 4) {
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    }
-                    Text(skin.name)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
+                Text(skin.name)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .foregroundStyle(.white.opacity(isSelected ? 1 : 0.7))
             }
-            .padding(12)
+            .padding(6)
             .background(
-                RoundedRectangle(cornerRadius: 18)
+                RoundedRectangle(cornerRadius: 12)
                     .fill(Color.white.opacity(isSelected ? 0.16 : 0.08))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 18)
+                        RoundedRectangle(cornerRadius: 12)
                             .stroke(isSelected ? Color.green : Color.clear, lineWidth: 2)
                     )
             )
@@ -76,23 +106,49 @@ struct SkinPickerView: View {
         .accessibilityIdentifier("skin_\(skin.rawValue)")
     }
 
-    private func gemPreview(_ color: Color) -> some View {
-        Circle()
-            .fill(color)
-            .overlay(
+    private func colorRow(for team: Team) -> some View {
+        HStack(spacing: 8) {
+            ForEach(PieceColor.allCases) { color in
+                colorDot(color, team: team)
+            }
+        }
+    }
+
+    private func colorDot(_ color: PieceColor, team: Team) -> some View {
+        let isSelected = appearance.piece(for: team) == color
+        let isTaken = appearance.piece(for: team.opponent) == color
+        return Button {
+            Haptics.select()
+            if team == .top { appearance.topChoice = color } else { appearance.bottomChoice = color }
+        } label: {
+            ZStack {
                 Circle()
-                    .fill(
-                        RadialGradient(
-                            colors: [Color.white.opacity(0.55), Color.white.opacity(0)],
-                            center: UnitPoint(x: 0.32, y: 0.28),
-                            startRadius: 0,
-                            endRadius: 13
+                    .fill(color.color)
+                    .overlay(
+                        Circle().fill(
+                            RadialGradient(
+                                colors: [Color.white.opacity(0.55), Color.white.opacity(0)],
+                                center: UnitPoint(x: 0.32, y: 0.28), startRadius: 0, endRadius: 18
+                            )
                         )
                     )
-            )
-            .overlay(Circle().stroke(Color.white.opacity(0.35), lineWidth: 1))
-            .frame(width: 26, height: 26)
-            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                    .overlay(Circle().stroke(isSelected ? Color.white : Color.white.opacity(0.3), lineWidth: isSelected ? 3 : 1))
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.4), radius: 1)
+                }
+            }
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .opacity(isTaken ? 0.25 : 1)
+        }
+        .buttonStyle(PressableButtonStyle())
+        .disabled(isTaken)
+        .accessibilityIdentifier("piece\(team == .top ? "Top" : "Bottom")_\(color.rawValue)")
+        .accessibilityLabel("\(team == .top ? "上方" : "下方")\(color.name)")
     }
 }
 
@@ -111,5 +167,5 @@ private struct SheetBackground: ViewModifier {
 }
 
 #Preview {
-    SkinPickerView(selected: .constant(.catppuccinMocha))
+    SkinPickerView(appearance: .constant(Appearance(skin: .catppuccinMocha)))
 }

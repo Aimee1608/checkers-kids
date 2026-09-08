@@ -22,14 +22,16 @@ open CheckersKids.xcodeproj
 
 - 棋盘:完整六角星(121 格)。中间六边形本体不变,另外 5 个尖角(含南)由北尖角的相对坐标绕棋盘中心旋转 60°×k 得到,k=3 精确落回南尖角,靠这个自洽性验证过旋转公式没手推错。南北对战只用南北两个尖角起子,其余四角是空的装饰区。棋盘容器是**顶点朝上的正六边形**,六个顶点正好落在六角星的六个尖角上——六角星本身上下尖、左右扁,用外接圆罩它横向要白白多出 15.5% 的宽度(圆得画到容得下上下尖角的直径),换六边形后宽度直接收窄到内容本身的跨度,同样屏幕下棋子大一圈。六个角做了圆角(顶点当控制点的二次贝塞尔,不用真圆弧,视觉上分辨不出但省掉算切点圆心的三角函数),纯直角六边形看着太尖锐。注意圆角会把顶点处的边界往内收 `cornerRatio/4` 个半径,所以 `hexRadius` 的边距得留够——0.75 配 0.15 圆角时尖角棋子离边界只剩 0.036 个格距,算过之后改成 0.85。
 - 起始区染色:实体跳棋盘的惯例是六个尖角各染一色、中间六边形留白。我们是两人局只用上下两个角,
-  所以只染这两块——另外四个角是装饰区,染了反而让人以为那也能走;而且六色要给 5 套皮肤各补 4 个
-  装饰色,维护量翻倍。染色用该套皮肤自己的棋子色(0.16 透明度),不额外引入配色。三角形顶点靠
+  所以只染这两块——另外四个角是装饰区,染了反而让人以为那也能走;而且六色要给每套皮肤各补 4 个
+  装饰色,维护量翻倍。染色用当前选定的双方棋子色(0.16 透明度),不额外引入配色。三角形顶点靠
   "只有一格的那行是尖顶、格子最多的那行是底边"结构化取,不硬编码坐标。
 - 棋盘宽度/格子间距随可用宽度动态算(`BoardView.calcSpacing`),上限从 36pt 提到 80pt——iPad 上可用宽度大很多,之前卡在 36pt 导致棋盘小得可怜、周围一圈空白;首页卡片也加了 `frame(maxWidth: 480)`,iPad 上不会横向拉到离谱。各层 padding 也压到最小(GameView 减 16 + `.padding(8)`,BoardView 内部 6),之前层层叠加量出来只铺满屏宽 78%,手机上点着费劲;`testBoardFillsAvailableWidth` 守着这条线不许回退。
 - 点击区是**圆形**不是方形(`contentShape(Circle())`),直径取 `spacing * 0.95`:斜向邻格的横向间距只有 `spacing/2`,方形触摸区会互相重叠抢点击;圆形按中心距判定,只要直径不超过 spacing 就一定不打架,同时还能比方形留出更大的有效面积。
-- 棋子是纯色圆形(`BoardSkin.topPieceColor`/`bottomPieceColor`,同配色方案里最协调的一对强调色),
-  叠一层左上角径向渐变高光做出光泽感,不用贴图——之前试过开源宝石贴图,颜色是"就近凑"的近似色,
-  贴图自带的大理石纹理在小尺寸下也显脏,不如纯色饱和干净。
+- 棋子是纯色圆形(`PieceColor`,8 种,色值取 [Tailwind CSS](https://tailwindcss.com/docs/customizing-colors)
+  调色板的 400 档——饱和度够、亮度一致,深色和浅色棋盘上都看得清),叠一层左上角径向渐变高光做出
+  光泽感,不用贴图——之前试过开源宝石贴图,颜色是"就近凑"的近似色,贴图自带的大理石纹理在小尺寸下
+  也显脏,不如纯色饱和干净。选中高亮/可落点提示不再固定黄色(玩家可以选黄棋子),改用
+  `BoardSkin.highlightColor`:深色棋盘用白、浅色棋盘用深灰。
 - AI:minimax + alpha-beta,按"棋子到目标区的行进度"打分,分简单/中等/困难三档(对应搜索深度 1/2/3)。轮到 AI 时先"想"半秒再落子,不是秒下。
 - 跳跃规则:跳跃永远是"隔一子对称跳"——落点是以被跳的子为镜像中心、跟起点对称的那一格,这跟
   "聚吧""QQ 游戏"等平台的"空跳=单跳规则+隔一子对称跳"是同一个公式(标准跳只是这个公式里"跑道
@@ -45,12 +47,18 @@ open CheckersKids.xcodeproj
   走子。难度/跳跃规则的选择器是"圆形单选图标+下方文字"横排(参考了竞品截图的交互样式),不是铺满
   宽度的大色块列表;跳跃规则选中哪项,组标题下面会跟着换一行说明文字。`JumpRule.label` 现在叫
   "单跳"/"空跳"(不再叫"不空格跳"/"空格跳",跟主流跳棋平台的叫法对齐)。
-- 棋盘皮肤:首页底部"皮肤"入口,`BoardSkin` 枚举配色全部取自知名开源配色方案(色值本身不受版权
-  保护),而非自己调的 RGB——摩卡糖果([Catppuccin](https://catppuccin.com))、北欧极光
-  ([Nord](https://www.nordtheme.com))、德古拉([Dracula](https://draculatheme.com))、复古暗调
-  ([Solarized Dark](https://ethanschoonover.com/solarized))、东京夜色
-  ([Tokyo Night](https://github.com/folke/tokyonight.nvim))共5套。`@AppStorage` 记住选择,跨次
-  启动保留。`BoardView`/`SkinPickerView` 都读同一份 skin 定义,不重复维护配色。
+- 皮肤:首页底部"皮肤"入口,一个页面里选三样——棋盘底色、上方棋子色、下方棋子色,顶部有一个
+  跟着实时变的迷你棋盘预览(`DecorativeBoardPreview`,首页顶部那个也是它)。
+  棋盘底色 `BoardSkin` 共 11 套,色值全部取自知名开源配色方案(色值本身不受版权保护),而非自己调
+  的 RGB——摩卡糖果([Catppuccin](https://catppuccin.com))、北欧极光([Nord](https://www.nordtheme.com))、
+  德古拉([Dracula](https://draculatheme.com))、复古暗调([Solarized Dark](https://ethanschoonover.com/solarized))、
+  东京夜色([Tokyo Night](https://github.com/folke/tokyonight.nvim)),以及原木/奶油/樱花/薄荷/海洋/森林
+  6 套取自 Tailwind 调色板。奶油/樱花/薄荷是浅色棋盘,`BoardSkin.isLight` 决定空格点、高亮用黑系还是白系。
+  棋子色独立于棋盘(`Appearance` 把三者合在一起传给各 View):没手动选过就跟着棋盘的默认搭配走,
+  换棋盘自动换;手动选过就固定。双方不能同色——对方已占的颜色在选色行里禁用;换棋盘导致默认色
+  撞上对方手选的颜色时,没手选的那一方自动让位。三个选择都 `@AppStorage` 记住,老用户升级后两个
+  棋子色 key 为空、回落到棋盘默认,与升级前一致。对局里的回合提示/获胜文案由棋子颜色名驱动
+  ("轮到红色"),不再写死"橙方/绿方"。
   皮肤页是 `.sheet`,背景必须用 `.presentationBackground` 设,**不能**在 sheet 里面自己铺一层
   不透明色顶到边:iOS 会给 sheet 边缘画一条浅色描边,自铺背景压在它下面会把亮度差拉到 3 倍
   (量过:圆角上的像素亮度 48~84,而背景 23、弹框 29),沿弯曲的角渲染成一串明暗不均的亮点,
@@ -91,12 +99,12 @@ open CheckersKids.xcodeproj
 ```
 Sources/
   App/         App 入口
-  Models/      棋盘几何、走子规则(JumpRule)、对局状态(GameMode/GameEngine)、BoardSkin、
+  Models/      棋盘几何、走子规则(JumpRule)、对局状态(GameMode/GameEngine)、BoardSkin/PieceColor、
                Haptics、SoundManager(合成音效)
   AI/          minimax AI
   Views/       HomeView(选模式+难度+皮肤入口)/ GameView(对局)/ BoardView(棋盘渲染+动画)/
-               SkinPickerView(选皮肤)/ SoundSettingsView(背景音乐/音效开关)/
-               DecorativeBoardPreview(首页装饰棋盘)/ Styles(PressableButtonStyle)
+               SkinPickerView(选棋盘底色+双方棋子色)/ SoundSettingsView(背景音乐/音效开关)/
+               DecorativeBoardPreview(首页/皮肤页的迷你棋盘预览)/ Styles(PressableButtonStyle)
 scripts/
   main.swift   核心规则冒烟测试(棋盘几何/连跳/AI自对弈),不依赖 Xcode 工程
 UITests/
